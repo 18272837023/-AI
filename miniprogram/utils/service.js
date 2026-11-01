@@ -1,13 +1,46 @@
 'use strict';
 const session = { tender: null, chapter: 0 };
+let accessPrompt = null;
 function accessHeaders() {
-  const token = getApp().globalData.apiAccessToken;
+  let token = getApp().globalData.apiAccessToken;
+  if (!token && typeof wx.getStorageSync === 'function') {
+    const saved = wx.getStorageSync('temporaryTestAccessToken');
+    if (typeof saved === 'string' && saved.length >= 32) token = saved;
+  }
   return token ? { Authorization: 'Bearer ' + token } : {};
 }
-function request(path, method = 'GET', data) {
+function askTestAccess() {
+  if (!accessPrompt) accessPrompt = new Promise((resolve, reject) => wx.showModal({
+    title: '输入测试访问码',
+    content: '',
+    editable: true, placeholderText: '粘贴管理员提供的本轮测试访问码', confirmText: '验证进入',
+    success: r => r.confirm && (r.content || '').trim().length >= 32
+      ? resolve(r.content.trim()) : reject(Error('尚未输入有效的测试访问码')),
+    fail: () => reject(Error('无法打开访问码输入框'))
+  })).finally(() => { accessPrompt = null; });
+  return accessPrompt;
+}
+function request(path, method = 'GET', data, accessRetried = false) {
   const base = getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310';
   return new Promise((resolve, reject) => wx.request({ url: base + path, method, data, header: accessHeaders(), timeout: 60000,
-    success: r => r.statusCode < 300 && r.data.ok ? resolve(r.data.data) : reject(Error(r.data?.error?.message || '服务请求失败')),
+    success: async r => {
+      const message = r.data?.error?.message || '服务请求失败';
+      if (r.statusCode === 401 && /测试访问凭证无效/.test(message) && !accessRetried) {
+        try {
+          const token = await askTestAccess();
+          getApp().globalData.apiAccessToken = token;
+          const result = await request(path, method, data, true);
+          wx.setStorageSync('temporaryTestAccessToken', token);
+          resolve(result);
+        } catch (e) {
+          delete getApp().globalData.apiAccessToken;
+          if (typeof wx.removeStorageSync === 'function') wx.removeStorageSync('temporaryTestAccessToken');
+          reject(e);
+        }
+        return;
+      }
+      return r.statusCode < 300 && r.data.ok ? resolve(r.data.data) : reject(Error(message));
+    },
     fail: () => reject(Error('无法连接服务，请检查服务是否启动')) }));
 }
 function id() { const value = session.tender?.id || wx.getStorageSync('tenderId'); if (!value) throw Error('请先新建或打开项目'); return value; }
