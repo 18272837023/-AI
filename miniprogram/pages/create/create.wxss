@@ -1,0 +1,292 @@
+/* 上传 */
+.upload {
+  margin: 32rpx 36rpx 0;
+  border: 3rpx dashed #C9D6EF;
+  border-radius: 36rpx;
+  background: #FAFCFF;
+  padding: 52rpx 36rpx;
+  text-align: center;
+}
+
+.upload:active {
+  background: #F2F7FF;
+  border-color: var(--brand);
+}
+
+.upic {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 32rpx;
+  background: linear-gradient(135deg, #EAF1FF, #DDE9FF);
+  margin: 0 auto 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uparrow {
+  font-size: 48rpx;
+  color: var(--brand);
+  font-weight: 300;
+  line-height: 1;
+  margin-top: -6rpx;
+}
+
+.upload-title {
+  font-size: 29rpx;
+  font-weight: 600;
+  margin-bottom: 10rpx;
+  word-break: break-all;
+}
+
+.upload-desc {
+  font-size: 23rpx;
+  color: var(--sub);
+  line-height: 1.6;
+}
+
+.ways {
+  display: flex;
+  justify-content: center;
+  gap: 16rpx;
+  margin-top: 28rpx;
+  flex-wrap: wrap;
+}
+
+/* 附件入口：正文上传后出现在文件列表下方，克制不抢主流程 */
+.attach-add {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 22rpx;
+  border: 2rpx dashed rgba(22, 93, 255, 0.28);
+  background: rgba(22, 93, 255, 0.04);
+}
+
+.aa-plus {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  flex: none;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aa-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.aa-t {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.aa-d {
+  font-size: 21rpx;
+  color: var(--sub);
+  margin-top: 4rpx;
+}
+
+/* 表单 */
+.formrow {
+  margin: 36rpx 36rpx 0;
+}
+
+.label {
+  font-size: 25rpx;
+  color: var(--sub);
+  margin-bottom: 16rpx;
+}
+
+.input {
+  height: 92rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  border: 1rpx solid var(--line);
+  padding: 0 28rpx;
+  font-size: 28rpx;
+  color: var(--text);
+}
+
+.ph {
+  color: #C0C6D0;
+}
+
+.chips {
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+/* 模式 */
+.modes {
+  display: flex;
+  gap: 18rpx;
+}
+
+.mode {
+  flex: 1;
+  background: #fff;
+  border: 3rpx solid var(--line);
+  border-radius: 26rpx;
+  padding: 24rpx 22rpx;
+  position: relative;
+}
+
+.mode.on {
+  border-color: var(--brand);
+  background: #F7FAFF;
+  box-shadow: 0 8rpx 28rpx rgba(22, 93, 255, 0.1);
+}
+
+.mode .rec {
+  position: absolute;
+  right: 16rpx;
+  top: 16rpx;
+  font-size: 18rpx;
+  background: var(--brand);
+  color: #fff;
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+}
+
+.mode-name {
+  font-size: 27rpx;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.mode-desc {
+  font-size: 21rpx;
+  color: var(--sub);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* 提示 */
+.notice {
+  display: flex;
+  gap: 12rpx;
+  margin: 32rpx 36rpx 0;
+  font-size: 22rpx;
+  color: #A9B0BC;
+  line-height: 1.7;
+}
+
+.notice-ic {
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: 50%;
+  border: 1rpx solid #A9B0BC;
+  font-size: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-top: 4rpx;
+}
+
+/* 文件列表 */
+.files {
+  margin: 28rpx 36rpx 0;
+}
+
+.fitem {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 22rpx 24rpx;
+  margin-bottom: 14rpx;
+  box-shadow: 0 4rpx 24rpx rgba(29, 33, 41, 0.04);
+}
+
+.fic {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 16rpx;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.fic.main {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.fic.attach {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.fbody {
+  flex: 1;
+  min-width: 0;
+}
+
+.fname {
+  font-size: 25rpx;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.fsize {
+  font-size: 21rpx;
+  color: var(--sub);
+  margin-top: 4rpx;
+}
+
+.fdel {
+  flex: none;
+  width: 44rpx;
+  text-align: center;
+  font-size: 32rpx;
+  color: #C0C6D0;
+}
+
+/* 附件缺失警告 */
+.warn {
+  display: flex;
+  gap: 12rpx;
+  margin: 20rpx 36rpx 0;
+  padding: 20rpx 24rpx;
+  background: #FFF8EE;
+  border: 1rpx solid #FFE4C4;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  color: #8A5B22;
+  line-height: 1.7;
+}
+
+.warn-ic {
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 50%;
+  flex: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 20rpx;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2rpx;
+}
+
+.lb-sub {
+  font-size: 21rpx;
+  color: #A9B0BC;
+  margin-left: 10rpx;
+}

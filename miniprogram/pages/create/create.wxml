@@ -1,0 +1,93 @@
+<import src="/components/flowbar.wxml" />
+<view class="page">
+  <template is="flowbar" data="{{step: 1}}" />
+
+  <!-- 已选文件 -->
+  <view class="files" wx:if="{{files.length > 0}}">
+    <view class="fitem" wx:for="{{files}}" wx:key="uid">
+      <view class="fic {{item.kind === 'attach' ? 'attach' : 'main'}}">{{item.kind === 'attach' ? '附' : '文'}}</view>
+      <view class="fbody">
+        <view class="fname">{{item.name}}</view>
+        <view class="fsize">{{item.size}} · {{item.tag}}</view>
+      </view>
+      <text class="fdel" data-index="{{index}}" bindtap="removeFile">×</text>
+    </view>
+
+    <!-- 附件入口：正文上传后才出现 -->
+    <view class="attach-add" wx:if="{{hasMain}}" catchtap="chooseAttach">
+      <text class="aa-plus">＋</text>
+      <view class="aa-body">
+        <view class="aa-t">上传附件</view>
+        <view class="aa-d">技术要求、规范、清单、图纸说明等，可多选</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 上传区 -->
+  <view class="upload" bindtap="chooseFile">
+    <view class="upic">
+      <view class="uparrow">↑</view>
+    </view>
+    <view class="upload-title">{{files.length > 0 ? '重新选择文件' : '上传招标文件'}}</view>
+    <view class="upload-desc">支持文字 PDF / DOCX / TXT，单文件 ≤ 50MB</view>
+    <view class="ways">
+      <view class="chip" catchtap="chooseFile">选择文件</view>
+    </view>
+  </view>
+
+  <!-- 项目名称 -->
+  <view class="formrow">
+    <view class="label">项目名称</view>
+    <input
+      class="input"
+      placeholder="选择文件后自动识别，可手动修改"
+      placeholder-class="ph"
+      value="{{projectName}}"
+      bindinput="onNameInput"
+    />
+    <view class="lb-sub">{{nameStatus}}</view>
+  </view>
+
+  <!-- 项目类型 -->
+  <view class="formrow">
+    <view class="label">项目类型<text class="lb-sub">仅供参考，实际类型从文件识别</text></view>
+    <view class="chips">
+      <view
+        class="chip {{activeType === index ? 'on' : ''}}"
+        wx:for="{{types}}"
+        wx:key="*this"
+        data-index="{{index}}"
+        bindtap="pickType"
+      >{{item}}</view>
+    </view>
+  </view>
+
+  <!-- 生成范围 -->
+  <view class="formrow">
+    <view class="label">生成范围</view>
+    <view class="modes">
+      <view
+        class="mode {{activeScope === item.key ? 'on' : ''}}"
+        wx:for="{{scopes}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="pickScope"
+      >
+        <view class="rec" wx:if="{{item.rec}}">推荐</view>
+        <view class="mode-name">{{item.name}}</view>
+        <view class="mode-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="notice">
+    <text class="notice-ic">i</text>
+    <text>文件保存在本机；开启真实 AI 后，相关内容会发送至你配置的模型服务。</text>
+  </view>
+
+  <view class="placeholder-bar"></view>
+
+  <view class="bottombar">
+    <button class="btn" disabled="{{busy}}" bindtap="startParse">{{busy ? '正在处理…' : '开始解析'}}</button>
+  </view>
+</view>

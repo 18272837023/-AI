@@ -1,0 +1,139 @@
+.parse-wrap {
+  padding: 68rpx 60rpx 0;
+  text-align: center;
+}
+
+.ring {
+  width: 264rpx;
+  height: 264rpx;
+  border-radius: 50%;
+  margin: 0 auto 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
+
+.ring-inner {
+  width: 224rpx;
+  height: 224rpx;
+  border-radius: 50%;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-num {
+  font-size: 62rpx;
+  font-weight: 700;
+  letter-spacing: -2rpx;
+  line-height: 1;
+}
+
+.ring-num .pct {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--sub);
+}
+
+.ring-label {
+  font-size: 22rpx;
+  color: var(--sub);
+  margin-top: 8rpx;
+}
+
+.parse-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  margin: 28rpx 0 12rpx;
+}
+
+.parse-desc {
+  font-size: 25rpx;
+  color: var(--sub);
+  line-height: 1.7;
+}
+
+.parse-eta {
+  font-size: 23rpx;
+  color: #A9B0BC;
+  margin-top: 8rpx;
+}
+
+/* 步骤 */
+.plist {
+  margin: 52rpx 36rpx 0;
+  background: #fff;
+  border-radius: 32rpx;
+  padding: 12rpx 32rpx;
+  box-shadow: 0 4rpx 28rpx rgba(29, 33, 41, 0.05);
+}
+
+.pitem {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid var(--line);
+  font-size: 27rpx;
+  color: #B4BAC4;
+}
+
+.pitem:last-child {
+  border-bottom: none;
+}
+
+.pitem .dot {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: #F2F3F5;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  color: #C0C6D0;
+}
+
+.pitem .ptext {
+  flex: 1;
+}
+
+.pitem .pright {
+  font-size: 22rpx;
+  color: var(--sub);
+}
+
+.pitem.done {
+  color: var(--text);
+}
+
+.pitem.done .dot {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.pitem.now {
+  color: var(--brand);
+  font-weight: 500;
+}
+
+.pitem.now .dot {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.pitem.now .pright {
+  color: var(--brand);
+}
+
+.parse-tip {
+  text-align: center;
+  font-size: 22rpx;
+  color: #A9B0BC;
+  margin-top: 32rpx;
+  line-height: 1.7;
+}

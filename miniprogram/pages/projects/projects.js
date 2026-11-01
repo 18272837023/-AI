@@ -1,0 +1,2 @@
+const api=require('../../utils/service.js');
+Page({data:{filters:['全部项目'],active:0,list:[]},onShow(){api.action(this,async()=>this.setData({list:(await api.request('/v1/tenders')).map(api.listItem)}));},pick(){},open(e){api.action(this,async()=>{const t=await api.refresh(e.currentTarget.dataset.id);wx.navigateTo({url:t.sections?'/pages/chapter/chapter':t.blueprint?'/pages/outline/outline':t.parse?'/pages/analysis/analysis':'/pages/parsing/parsing'});});},create(){wx.navigateTo({url:'/pages/create/create'});}});

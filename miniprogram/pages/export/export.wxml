@@ -1,0 +1,109 @@
+<view class="page">
+  <!-- 封面预览 -->
+  <view class="cover-wrap">
+    <view class="cover">
+      <view class="cover-tag">TECHNICAL PROPOSAL</view>
+      <view class="cover-title">{{projectName}}技术标</view>
+      <view class="cover-foot">
+        <text>投标人：（暗标，已隐藏）</text>
+        <text class="cover-date">{{date}}</text>
+      </view>
+    </view>
+    <view class="cover-meta">{{chapterCount}} 章 · {{wordCount}} 字</view>
+  </view>
+
+  <!-- 排版设置 -->
+  <view class="pad" style="margin-top:28rpx">
+    <view class="card">
+      <view class="optrow">
+        <view class="lb">正文字体<text class="sub">按招标文件要求选择</text></view>
+        <view class="seg">
+          <view
+            class="seg-item {{fontIndex === index ? 'on' : ''}}"
+            wx:for="{{fonts}}"
+            wx:key="*this"
+            data-index="{{index}}"
+            bindtap="pickFont"
+          >{{item}}</view>
+        </view>
+      </view>
+
+      <view class="optrow">
+        <view class="lb">字号</view>
+        <view class="seg">
+          <view
+            class="seg-item {{sizeIndex === index ? 'on' : ''}}"
+            wx:for="{{sizes}}"
+            wx:key="*this"
+            data-index="{{index}}"
+            bindtap="pickSize"
+          >{{item}}</view>
+        </view>
+      </view>
+
+      <view class="optrow">
+        <view class="lb">行距</view>
+        <view class="seg">
+          <view
+            class="seg-item {{lineIndex === index ? 'on' : ''}}"
+            wx:for="{{lines}}"
+            wx:key="*this"
+            data-index="{{index}}"
+            bindtap="pickLine"
+          >{{item}}</view>
+        </view>
+      </view>
+
+      <view class="optrow">
+        <view class="lb">自动生成目录与页码</view>
+        <switch checked="{{autoToc}}" color="#165DFF" bindchange="toggle" data-key="autoToc" />
+      </view>
+
+      <view class="optrow">
+        <view class="lb">页眉页脚</view>
+        <switch checked="{{headerFooter}}" color="#165DFF" bindchange="toggle" data-key="headerFooter" />
+      </view>
+
+      <view class="optrow">
+        <view class="lb">暗标模式<text class="sub">不写作者及企业身份信息，正文身份信息需先自检修复</text></view>
+        <switch checked="{{blindMode}}" color="#165DFF" bindchange="toggle" data-key="blindMode" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 导出格式 -->
+  <view class="sect pad">
+    <view class="sect-hd"><text class="h3">导出格式</text></view>
+    <view class="fmt">
+      <view class="fmt-item {{format === 'word' ? 'on' : ''}}" data-key="word" bindtap="pickFormat">
+        <view class="fmt-ic">W</view>
+        <view class="fmt-name">Word</view>
+        <view class="fmt-desc">.docx 可编辑</view>
+      </view>
+      <view class="fmt-item {{format === 'pdf' ? 'on' : ''}}" data-key="pdf" bindtap="pickFormat">
+        <view class="fmt-ic gray">P</view>
+        <view class="fmt-name">PDF</view>
+        <view class="fmt-desc">固定版式</view>
+      </view>
+    </view>
+
+    <view class="notice">
+      <text class="notice-ic">i</text>
+      <text>仅导出技术标部分。商务标、资格文件、报价表需按招标文件另行编制</text>
+    </view>
+
+    <view class="notice" style="margin-top:16rpx">
+      <text class="notice-ic">i</text>
+      <text>当前本机测试无需支付。Word 目录与页码由 Word 打开时更新；PDF 已排好版。</text>
+    </view>
+  </view>
+
+  <view class="pad" style="margin-bottom:24rpx"><view class="notice">{{gateTitle}} · {{gateDesc}}</view></view>
+  <view class="placeholder-bar"></view>
+
+  <view class="bottombar">
+    <button class="btn ghost small" bindtap="goHome">返回工作台</button>
+    <button class="btn" disabled="{{busy || blocking > 0}}" bindtap="download">导出 {{format === 'word' ? 'Word' : 'PDF'}} 文档</button>
+  </view>
+
+</view>

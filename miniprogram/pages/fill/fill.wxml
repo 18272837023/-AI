@@ -1,0 +1,135 @@
+<import src="/components/flowbar.wxml" />
+<view class="page">
+  <template is="flowbar" data="{{step: 3}}" />
+
+  <view class="hero" wx:if="{{loading}}"><view class="hero-t">正在读取待补信息…</view></view>
+  <view class="hero" wx:if="{{loadError}}"><view class="hero-t">暂未载入待补字段</view><view class="hero-d">{{loadError}}</view><button class="btn ghost" disabled="{{busy}}" bindtap="retry">重新尝试</button></view>
+  <!-- 概览 -->
+  <view class="hero" wx:if="{{ready}}">
+    <view class="hero-t">3 项内容需要你补充</view>
+    <view class="hero-d">项目经历、供应商与人员入场时间、培训与考核。方案由 AI 编写，这里只需填写你的真实信息；培训支持 AI 一键拆解，也可手动新增。</view>
+    <view class="hero-stats">
+      <view class="hs"><text class="n">{{totalFields}}</text><text class="l">字段</text></view>
+      <view class="hs"><text class="n brand">{{filledCount}}</text><text class="l">已填</text></view>
+      <view class="hs"><text class="n">{{declaredCount}}</text><text class="l">已声明</text></view>
+    </view>
+  </view>
+
+  <view class="tools" wx:if="{{ready}}">
+    <text class="tool" bindtap="restore">重新载入已保存内容</text>
+    <text class="tool-dot">·</text>
+    <text class="tool" bindtap="clearAll">清空重填</text>
+  </view>
+
+  <view class="note" wx:if="{{ready && !groups.length}}">当前未识别到需要补充的项目资料，可保存并进入正文。</view>
+  <!-- 分组 -->
+  <view class="grp" wx:if="{{ready}}" wx:for="{{groups}}" wx:for-item="grp" wx:key="id">
+    <view class="grp-hd">
+      <view class="grp-l">
+        <text class="grp-el">{{grp.el}}</text>
+        <text class="grp-name">{{grp.name}}</text>
+      </view>
+      <text
+        wx:if="{{grp.canDeclare}}"
+        class="declare {{grp.declared ? 'on' : ''}}"
+        data-id="{{grp.id}}"
+        bindtap="declare"
+      >{{grp.declared ? '已声明未提供' : '确认无此项'}}</text>
+      <text wx:else class="must">按真实情况填写</text>
+    </view>
+    <view class="grp-ch">{{grp.chapter}}</view>
+
+    <block wx:if="{{!grp.declared}}">
+      <view
+        class="ent {{grp.repeat ? 'is-rep' : ''}}"
+        wx:for="{{grp.entries}}"
+        wx:for-item="ent"
+        wx:for-index="ei"
+        wx:key="id"
+      >
+        <view class="ent-hd" wx:if="{{grp.repeat}}">
+          <text class="ent-no">{{grp.unit}} {{ei + 1}}</text>
+          <text
+            wx:if="{{grp.entries.length > 1}}"
+            class="ent-del"
+            data-g="{{grp.id}}"
+            data-e="{{ent.id}}"
+            bindtap="removeEntry"
+          >删除</text>
+        </view>
+
+        <block wx:for="{{ent.fields}}" wx:for-item="f" wx:key="key">
+          <view class="fd-sec" wx:if="{{f.type === 'label'}}">{{f.text}}</view>
+
+          <view class="fd" wx:elif="{{f.type === 'chips'}}">
+            <view class="fd-lb">{{f.label}}</view>
+            <view class="opts">
+              <text
+                class="opt {{f.value === o ? 'on' : ''}}"
+                wx:for="{{f.options}}"
+                wx:for-item="o"
+                wx:key="*this"
+                data-g="{{grp.id}}"
+                data-e="{{ent.id}}"
+                data-k="{{f.key}}"
+                data-v="{{o}}"
+                bindtap="pick"
+              >{{o}}</text>
+            </view>
+          </view>
+
+          <view class="fd" wx:elif="{{f.type === 'textarea'}}"><view class="fd-lb">{{f.label}}</view><textarea class="fd-in fd-area" value="{{f.value}}" placeholder="{{f.ph}}" data-g="{{grp.id}}" data-e="{{ent.id}}" data-k="{{f.key}}" bindinput="onInput" auto-height maxlength="6000" disabled="{{busy}}" /></view>
+
+          <view class="fd" wx:else>
+            <view class="fd-lb">{{f.label}}</view>
+            <input
+              class="fd-in"
+              value="{{f.value}}"
+              placeholder="{{f.ph}}"
+              placeholder-class="ph"
+              data-g="{{grp.id}}"
+              data-e="{{ent.id}}"
+              data-k="{{f.key}}"
+              disabled="{{busy}}"
+              bindinput="onInput"
+            />
+          </view>
+        </block>
+      </view>
+
+      <view
+        class="add"
+        wx:if="{{grp.repeat && grp.entries.length < grp.max}}"
+        data-id="{{grp.id}}"
+        bindtap="addEntry"
+      >＋ 再加一个{{grp.unit}}（最多 {{grp.max}} 个）</view>
+
+      <view
+        class="polish {{grp.busy ? 'busy' : ''}}"
+        wx:if="{{grp.aiPolish}}"
+        data-id="{{grp.id}}"
+        bindtap="polish"
+      >
+        <text class="polish-ic">✦</text>
+        <view class="polish-tx">
+          <view class="polish-t">{{grp.busy ? 'AI 正在拆解培训维度…' : 'AI 一键拆解培训：2—6 条'}}</view>
+          <view class="polish-d">结合本项目要求拟定，核对后可自行增删改；不作为已开展培训的事实记录</view>
+        </view>
+      </view>
+
+      <view class="grp-hint">{{grp.hint}}</view>
+    </block>
+
+    <view class="grp-off" wx:else>已声明未提供或不适用。自检将保留风险提醒，原文强制要求仍需满足。</view>
+  </view>
+
+  <view class="note" wx:if="{{ready}}">
+    只填写你能确认的真实信息；留空不会被 AI 猜填。保存会补入相关段落，保留其他章节与人工修改。完整编写底稿仍可从“施工图与要素表”单独查看。
+  </view>
+
+  <view class="placeholder-bar"></view>
+
+  <view class="bottombar">
+    <button class="btn" disabled="{{busy || !ready}}" bindtap="save">{{busy ? '正在保存…' : '保存并进入正文'}}</button>
+  </view>
+</view>

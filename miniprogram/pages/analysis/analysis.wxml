@@ -1,0 +1,216 @@
+<import src="/components/flowbar.wxml" />
+<view class="page">
+  <template is="flowbar" data="{{step: 2}}" />
+
+  <view class="scope-tip" wx:if="{{degraded}}">当前解析包含规则模拟或降级结果，请逐项核对真实原文。</view>
+  <view class="pad"><button class="btn ghost" bindtap="editParse">核对并修改解析数据</button><view wx:if="{{editing}}"><view class="note">保留字段名与 ID。保存会清除施工图、要素表及正文。</view><textarea value="{{editJson}}" bindinput="onJson" maxlength="-1" style="width:100%;height:600rpx"/><button class="btn" disabled="{{busy}}" bindtap="saveParse">保存解析修改</button></view></view>
+  <view class="scope-tip">当前文件：{{project.files[0].name || '未上传'}} · {{project.files[0].size}} · {{sourceMode === 'live' ? '真实模型解析' : (sourceMode === 'mock' ? '规则模拟解析' : '模式待确认')}}</view>
+  <!-- 项目卡 -->
+  <view class="projcard">
+    <view class="pc-name">{{project.name}}</view>
+    <view class="pc-grid">
+      <view class="pc-item"><text>招标人/采购人</text><text class="v">{{project.purchaser}}</text></view>
+      <view class="pc-item"><text>预算/合同估算价</text><text class="v">{{project.budget}}</text></view>
+      <view class="pc-item"><text>项目类型</text><text class="v">{{project.projectType}}</text></view>
+      <view class="pc-item"><text>计划工期</text><text class="v">{{project.duration}}</text></view>
+    </view>
+    <view class="pc-deadline">
+      <text class="dot">⏱</text>
+      <text>投标截止：<text class="hl">{{project.deadline}}</text></text>
+    </view>
+  </view>
+
+  <!-- Tabs -->
+  <scroll-view class="tabs" scroll-x enable-flex show-scrollbar="{{false}}">
+    <view
+      class="tabitem {{tab === index ? 'on' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="*this"
+      data-index="{{index}}"
+      bindtap="switchTab"
+    >
+      {{item}}<text class="tabnum" wx:if="{{index === 1}}">{{qualStats.total}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 项目要素 -->
+  <view wx:if="{{tab === 0}}">
+    <view class="sect" style="margin-top:28rpx">
+      <view class="card">
+        <view class="kv">
+          <view class="kv-item"><text>招标编号</text><text class="v">{{project.bidNo}}</text></view>
+          <view class="kv-item"><text>评标办法</text><text class="v">{{project.evalMethod}}</text></view>
+          <view class="kv-item"><text>技术标分值</text><text class="v brand">{{project.techScoreText}}</text></view>
+          <view class="kv-item"><text>页数上限</text><text class="v">{{project.pageLimit}}</text></view>
+          <view class="kv-item"><text>技术标格式</text><text class="v">{{project.blind}}</text></view>
+          <view class="kv-item"><text>质量要求</text><text class="v">{{project.quality}}</text></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="sect">
+      <view class="sect-hd"><text class="h3">招标范围</text></view>
+      <view class="card">
+        <view class="bul">{{project.scope}}</view>
+        <view class="bul">{{project.location}}</view>
+      </view>
+    </view>
+
+    <view class="sect">
+      <view class="sect-hd"><text class="h3">已识别文件</text><text class="more">{{project.files.length}} 份</text></view>
+      <view class="card">
+        <view class="file" wx:for="{{project.files}}" wx:key="name">
+          <view class="file-tag {{item.kind === 'attach' ? 'orange' : 'blue'}}">{{item.tag}}</view>
+          <view class="file-body">
+            <view class="file-name">{{item.name}}</view>
+            <view class="file-size">{{item.size}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{tab === 0}}" class="sect"><view class="sect-hd"><text class="h3">原文依据</text></view><view class="card"><view class="q" wx:for="{{fieldDetails}}" wx:key="key"><view class="q-hd">{{item.label}}：{{item.value}}</view><view class="q-src" wx:if="{{item.source}}">{{item.source}}</view><view class="q-req" wx:if="{{item.quote}}">{{item.quote}}</view></view></view></view>
+  <!-- 合格性审查 -->
+  <view wx:if="{{tab === 1}}">
+    <view class="qsum">
+      <view class="qs" wx:for="{{qualStats.cats}}" wx:key="name">
+        <text class="n">{{item.count}}</text>
+        <text class="l">{{item.name}}</text>
+      </view>
+    </view>
+
+    <view class="scope-tip">
+      <text class="scope-ic">i</text>
+      <text>共 {{qualStats.total}} 条合格性条款。{{qualStats.tech}} 条需在技术标内响应（已进入生成与自检）；{{qualStats.attach}} 条标「需另附材料」——需要提供真实证书、合同等证明材料，AI 可以编写响应说明，不能替代证明材料；{{qualStats.none}} 条不涉及技术标。</text>
+    </view>
+
+    <view class="sect">
+      <view class="card">
+        <view class="q" wx:for="{{quals}}" wx:key="id">
+          <view class="q-hd">
+            <text class="q-code">{{item.cat}} {{item.code}}</text>
+            <text class="tag {{item.respCls}}">{{item.respText}}</text>
+          </view>
+          <view class="q-req">{{item.req}}</view>
+          <view class="q-where" wx:if="{{item.where}}">
+            <text class="qw-ic">→</text>
+            <text>{{item.where}}</text>
+          </view>
+          <view class="q-src">{{item.src}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 技术标评分 -->
+  <view wx:if="{{tab === 2}}">
+    <view class="scope-tip">
+      <text class="scope-ic">i</text>
+      <text>本次技术标抽取合计 {{project.techScoreText}}，请核对原文有无遗漏评分项。</text>
+    </view>
+
+    <view class="score-total">
+      <view
+        class="score-box"
+        wx:for="{{scoreSplit}}"
+        wx:key="label"
+        style="background:{{item.bg}};color:{{item.color}}"
+      >
+        <view class="sb-num">{{item.score}}</view>
+        <view class="sb-label">{{item.label}}</view>
+        <view class="sb-scope" wx:if="{{item.scope === 'out'}}">不含</view>
+      </view>
+    </view>
+
+    <view class="sect">
+      <view class="sect-hd">
+        <text class="h3">评分项与要素拆解</text>
+        <text class="more" wx:if="{{blueprintStats.ready}}">共 {{blueprintStats.elements}} 条必答要素</text><text class="more" wx:else>要素尚未拆解</text>
+      </view>
+      <view class="scope-tip" wx:if="{{!blueprintStats.ready}}">评分项已抽取。点击底部“确认解析结果”后拆解必答要素，当前尚未计算要素数量。</view>
+      <view class="card">
+        <view class="sc" wx:for="{{scoreItems}}" wx:key="id">
+          <view class="sc-top">
+            <text class="sc-name">{{item.name}}</text>
+            <text class="sc-score">{{item.scoreText}}</text>
+          </view>
+          <view class="sc-tier">{{item.tier}}</view>
+          <view class="sc-foot">
+            <text class="sc-el">{{item.elementsReady ? item.elements.length + ' 条必答要素' : '待拆解'}}</text>
+            <text class="sc-src">{{item.source}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="pad" style="margin-top:28rpx">
+      <button class="btn ghost" bindtap="goBlueprint">查看施工图与要素表</button>
+    </view>
+  </view>
+
+  <!-- 大纲 -->
+  <view wx:if="{{tab === 3}}">
+    <view class="mode">
+      <view class="mode-hd">
+        <text class="mode-tag">{{project.outlineModeText}}</text>
+        <text class="mode-conf">置信度 {{project.modeEvidence.confidence}}</text>
+      </view>
+      <view class="mode-quote">「{{project.modeEvidence.quote}}」</view>
+      <view class="mode-src">{{project.modeEvidence.src}} · {{project.modeEvidence.page}}</view>
+      <view class="mode-warn">{{project.outlineReason}}</view><view class="mode-warn">当前按评分项组织候选章节，请核对招标文件指定目录。</view>
+    </view>
+
+    <view class="sect">
+      <view class="outline">
+        <view class="ol" wx:for="{{outline}}" wx:key="no">
+          <view class="ol-body">
+            <view class="ol-title"><text class="no">{{item.no}}</text>{{item.title}}</view>
+            <view class="ol-meta">
+              <text class="tag {{item.score > 0 ? 'blue' : 'gray'}}">{{item.score > 0 ? item.score + ' 分' : '加分项'}}</text>
+              <text class="tag gray">{{item.depText}}</text>
+              <text class="ol-words">{{item.coverageLabel}}</text>
+            </view>
+          </view>
+          <text class="lock">只读</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="pad" style="margin-top:28rpx">
+      <button class="btn ghost" bindtap="goOutline">进入大纲</button>
+    </view>
+  </view>
+
+  <!-- 风险 -->
+  <view wx:if="{{tab === 4}}">
+    <view class="scope-tip">
+      <text class="scope-ic">i</text>
+      <text>以下 {{techRisks.length}} 条是从原文识别的资格、形式与技术响应要求，供重点核对；列出要求不代表你已经违规。</text>
+    </view>
+
+    <view class="sect">
+      <view class="card">
+        <view class="risk" wx:for="{{techRisks}}" wx:key="id">
+          <view class="risk-ic {{item.level === 'high' ? 'high' : 'mid'}}">!</view>
+          <view class="risk-body">
+            <view class="risk-title">
+              {{item.req}}
+              <text class="tag {{item.level === 'high' ? 'red' : 'orange'}}">{{item.level === 'high' ? '高危' : '中危'}}</text>
+            </view>
+            <view class="risk-desc">{{item.impact}}</view>
+            <view class="risk-src">来源：{{item.src}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card" wx:if="{{project.techScore <= 0}}"><view>评分细则识别失败，不能将未知分值按 0 分使用。</view><button class="btn" disabled="{{busy}}" bindtap="reparse">重新解析原件</button></view>
+  <view class="placeholder-bar"></view>
+
+  <view class="bottombar">
+    <button class="btn ghost small" bindtap="exportReport">导出报告</button>
+    <button class="btn" disabled="{{busy}}" bindtap="confirm">{{busy ? '正在拆解要素…' : '确认解析结果'}}</button>
+  </view>
+</view>

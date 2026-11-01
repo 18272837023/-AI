@@ -1,0 +1,197 @@
+.home-top {
+  padding: 16rpx 36rpx 0;
+}
+
+.greet {
+  font-size: 26rpx;
+  color: var(--sub);
+  margin-bottom: 8rpx;
+}
+
+.h1 {
+  font-size: 50rpx;
+  font-weight: 700;
+  letter-spacing: -0.8rpx;
+  line-height: 1.35;
+}
+
+/* CTA */
+.cta {
+  margin: 40rpx 36rpx 0;
+  border-radius: 44rpx;
+  padding: 52rpx 44rpx 48rpx;
+  min-height: 330rpx;
+  box-sizing: border-box;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(125deg, #165DFF 0%, #3C7EFF 52%, #6BA2FF 100%);
+  box-shadow: 0 32rpx 70rpx -18rpx rgba(22, 93, 255, 0.62);
+}
+
+.cta::before {
+  content: "";
+  position: absolute;
+  width: 420rpx;
+  height: 420rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  right: -140rpx;
+  top: -190rpx;
+}
+
+.cta::after {
+  content: "";
+  position: absolute;
+  width: 260rpx;
+  height: 260rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.09);
+  right: 30rpx;
+  bottom: -150rpx;
+}
+
+.cta .badge {
+  position: absolute;
+  right: 36rpx;
+  top: 36rpx;
+  font-size: 22rpx;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8rpx 18rpx;
+  border-radius: 40rpx;
+}
+
+.cta-title {
+  font-size: 48rpx;
+  font-weight: 700;
+  letter-spacing: -0.6rpx;
+  margin-bottom: 16rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.cta-desc {
+  font-size: 26rpx;
+  opacity: 0.86;
+  line-height: 1.65;
+  max-width: 470rpx;
+  position: relative;
+  z-index: 2;
+}
+
+.cta-go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 44rpx;
+  padding: 26rpx 38rpx;
+  border-radius: 48rpx;
+  background: #fff;
+  color: #165DFF;
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 10rpx 26rpx -8rpx rgba(6, 40, 120, 0.45);
+}
+
+/* 空状态 */
+.empty {
+  background: #fff;
+  border-radius: 30rpx;
+  padding: 64rpx 40rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 28rpx rgba(29, 33, 41, 0.05);
+}
+
+.empty-ic {
+  width: 84rpx;
+  height: 84rpx;
+  margin: 0 auto 24rpx;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-t {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.empty-d {
+  font-size: 23rpx;
+  color: var(--sub);
+  line-height: 1.6;
+  margin-top: 10rpx;
+}
+
+/* 项目卡 */
+.proj {
+  display: flex;
+  gap: 24rpx;
+  background: #fff;
+  border-radius: 30rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 28rpx rgba(29, 33, 41, 0.05);
+  margin-bottom: 20rpx;
+}
+
+.proj-cover {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 24rpx;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
+.proj-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.proj-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-bottom: 10rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proj-meta {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.proj-time {
+  font-size: 23rpx;
+  color: var(--sub);
+}
+
+.proj-bar {
+  height: 8rpx;
+  border-radius: 8rpx;
+  background: #F2F4F8;
+  margin-top: 18rpx;
+  overflow: hidden;
+}
+
+.proj-bar-in {
+  height: 100%;
+  border-radius: 8rpx;
+  background: linear-gradient(90deg, #165DFF, #5B95FF);
+}

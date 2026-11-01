@@ -1,0 +1,48 @@
+.page {
+  padding-bottom: 40rpx;
+}
+
+.ph-t {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16rpx;
+}
+
+.ph-d {
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--sub);
+  margin-bottom: 12rpx;
+}
+
+.ph-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 20rpx;
+  padding: 20rpx 0;
+  border-top: 1rpx solid var(--line);
+}
+
+.ph-k {
+  font-size: 25rpx;
+  color: var(--sub);
+  width: 170rpx;
+  flex: none;
+}
+
+.ph-v {
+  font-size: 25rpx;
+  color: var(--text);
+  flex: 1;
+  word-break: break-all;
+}
+
+.ph-gap {
+  margin-top: 24rpx;
+}
+
+.ph-btn {
+  margin-top: 32rpx;
+  width: 100%;
+}

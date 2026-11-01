@@ -1,0 +1,305 @@
+/* ============================================
+   AI 标书 · 全局样式
+   设计基准：750rpx
+   ============================================ */
+
+page {
+  --brand: #165DFF;
+  --brand2: #4E8BFF;
+  --brand-soft: #EAF1FF;
+  --accent: #FF7D00;
+  --accent-soft: #FFF4E8;
+  --bg: #F5F7FB;
+  --card: #FFFFFF;
+  --text: #1D2129;
+  --sub: #86909C;
+  --sub2: #4E5969;
+  --line: #EDF0F5;
+  --red: #F53F3F;
+  --red-soft: #FFECE8;
+  --green: #00B42A;
+  --green-soft: #E8FFEA;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  -webkit-font-smoothing: antialiased;
+}
+
+view, text, input, textarea, button, scroll-view {
+  box-sizing: border-box;
+}
+
+/* 移动端不显示滚动条：微信真机本身不绘制，这里统一兜住 Android WebView */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+scroll-view,
+textarea {
+  scrollbar-width: none;
+}
+
+.page {
+  min-height: 100vh;
+  background: var(--bg);
+  padding-bottom: 40rpx;
+}
+
+.pad {
+  padding-left: 36rpx;
+  padding-right: 36rpx;
+}
+
+/* ---------- 卡片 ---------- */
+.card {
+  background: var(--card);
+  border-radius: 32rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 28rpx rgba(29, 33, 41, 0.05);
+}
+
+/* ---------- 区块标题 ---------- */
+.sect {
+  margin-top: 44rpx;
+}
+
+.sect-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22rpx;
+}
+
+.sect-hd .h3 {
+  font-size: 30rpx;
+  font-weight: 600;
+  letter-spacing: 0.5rpx;
+}
+
+.sect-hd .more {
+  font-size: 24rpx;
+  color: var(--sub);
+}
+
+/* ---------- 按钮 ---------- */
+.btn {
+  height: 92rpx;
+  border-radius: 26rpx;
+  background: var(--brand);
+  color: #fff;
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12rpx 36rpx rgba(22, 93, 255, 0.25);
+  line-height: 1;
+}
+
+.btn::after {
+  border: none;
+}
+
+.btn:active {
+  opacity: 0.9;
+  transform: scale(0.99);
+}
+
+.btn.ghost {
+  background: #fff;
+  color: var(--text);
+  border: 1rpx solid var(--line);
+  box-shadow: none;
+}
+
+.btn.dark {
+  background: #1D2129;
+  box-shadow: 0 12rpx 36rpx rgba(29, 33, 41, 0.2);
+}
+
+.btn[disabled] {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.btn.is-disabled {
+  background: #C9CFD9;
+  color: #fff;
+  box-shadow: none;
+}
+
+.btn-row {
+  display: flex;
+  gap: 20rpx;
+}
+
+/* 底部固定操作栏 */
+.bottombar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20rpx 36rpx calc(28rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1rpx solid var(--line);
+  display: flex;
+  gap: 20rpx;
+  z-index: 45;
+}
+
+.bottombar .btn {
+  flex: 1;
+}
+
+.bottombar .btn.small {
+  flex: none;
+  width: 192rpx;
+}
+
+.placeholder-bar {
+  height: 180rpx;
+}
+
+/* ---------- 标签 / 徽标 ---------- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 42rpx;
+  padding: 0 14rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.tag.blue { background: var(--brand-soft); color: var(--brand); }
+.tag.green { background: var(--green-soft); color: var(--green); }
+.tag.orange { background: var(--accent-soft); color: var(--accent); }
+.tag.red { background: var(--red-soft); color: var(--red); }
+.tag.gray { background: #F2F3F5; color: var(--sub); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 60rpx;
+  padding: 0 24rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  border: 1rpx solid var(--line);
+  font-size: 25rpx;
+  color: var(--sub2);
+  white-space: nowrap;
+}
+
+.chip.on {
+  background: var(--brand-soft);
+  border-color: rgba(22, 93, 255, 0.35);
+  color: var(--brand);
+  font-weight: 500;
+}
+
+/* ---------- 列表 ---------- */
+.divider {
+  height: 1rpx;
+  background: var(--line);
+  margin: 28rpx 0;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  padding: 30rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+
+.cell:last-child {
+  border-bottom: none;
+}
+
+.cell .arrow {
+  margin-left: auto;
+  color: #C9CFD9;
+  font-size: 26rpx;
+}
+
+/* ---------- 空状态 ---------- */
+.empty {
+  padding: 120rpx 0;
+  text-align: center;
+  color: var(--sub);
+  font-size: 26rpx;
+}
+
+/* ---------- 流程进度条（components/flowbar.wxml 共用） ---------- */
+.flowbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  padding: 18rpx 36rpx;
+  background: #fff;
+  border-bottom: 1rpx solid var(--line);
+}
+
+.fb {
+  display: flex;
+  align-items: center;
+  font-size: 22rpx;
+  color: #A9B0BC;
+  white-space: nowrap;
+}
+
+.fb-n {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  margin-right: 8rpx;
+  background: #EEF1F6;
+  color: #9AA1AC;
+  font-size: 19rpx;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fb.on {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.fb.on .fb-n {
+  background: var(--brand);
+  color: #fff;
+}
+
+.fb.done {
+  color: var(--green);
+}
+
+.fb.done .fb-n {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.fb-ln {
+  flex: 1;
+  height: 1rpx;
+  background: var(--line);
+  margin: 0 12rpx;
+}
+
+.fb-ln.on {
+  background: rgba(22, 93, 255, 0.35);
+}
+
+/* ---------- 通用文字 ---------- */
+.t-sub { color: var(--sub); }
+.t-sm { font-size: 24rpx; }
+.t-bold { font-weight: 600; }

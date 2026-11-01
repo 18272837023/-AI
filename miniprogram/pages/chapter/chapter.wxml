@@ -1,0 +1,80 @@
+<import src="/components/flowbar.wxml" />
+<view class="page doc-page">
+  <template is="flowbar" data="{{step: 3}}" />
+
+  <!-- 待补字段提醒 -->
+  <view class="fillbar" wx:if="{{fillPending > 0}}" bindtap="goFill">
+    <text class="fb-ic">填</text>
+    <text class="fb-tx">有 {{fillPending}} 项真实信息待你补充</text>
+    <text class="fb-go">去填写 ›</text>
+  </view>
+
+  <scroll-view scroll-x class="tabs"><text class="chip {{chapterIndex === item.index ? 'on' : ''}}" wx:for="{{chapters}}" wx:key="index" data-index="{{item.index}}" bindtap="pickChapter">{{item.title}}</text></scroll-view>
+  <!-- 阅读模式 -->
+  <block wx:if="{{!editing}}">
+    <view class="doc">
+      <view class="doc-title">{{chapter.title}}</view>
+      <view class="doc-meta">
+        <text class="tag blue">{{chapter.scoreText}}</text>
+        <text>{{chapter.wordCount}} 字</text>
+        <text class="dot">·</text>
+        <text>已保存于 {{savedAt}}</text>
+        <text class="edit-btn" bindtap="toggleEdit">编辑</text>
+      </view>
+
+      <!-- 要素清单 -->
+      <view class="els">
+        <view class="els-hd">
+          <text class="els-t">本章必答要素</text>
+          <text class="els-n">已完成 {{doneCount}}/{{chapter.elements.length}}</text>
+        </view>
+        <view class="els-list">
+          <view class="elc {{item.done ? 'ok' : 'todo'}}" wx:for="{{chapter.elements}}" wx:key="id">
+            <text class="elc-dot">{{item.done ? '✓' : '○'}}</text>
+            <text class="elc-n">{{item.name}} · {{item.statusText}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 评分档次 -->
+      <view class="tier">
+        <text class="tier-lb">评分档次</text>
+        <text class="tier-tx">{{chapter.tier}}</text>
+      </view>
+
+      <block wx:for="{{chapter.blocks}}" wx:key="index">
+        <view wx:if="{{item.type === 'h4'}}" class="doc-h4">{{item.text}}</view>
+        <view wx:elif="{{item.type === 'quote'}}" class="doc-quote">{{item.text}}</view>
+        <view wx:elif="{{item.type === 'table'}}" class="doc-table"><view class="doc-h4">{{item.text}}</view><view class="table-row" wx:for="{{item.rows}}" wx:for-item="row" wx:key="index"><text class="table-cell" wx:for="{{row}}" wx:for-item="cell" wx:key="index">{{cell}}</text></view></view>
+        <view wx:elif="{{item.type === 'ph'}}" class="doc-ph">
+          <text class="ph-tag">待确认</text>
+          <text class="ph-tx">{{item.text}}</text>
+        </view>
+        <view wx:else class="doc-p">{{item.text}}</view>
+      </block>
+
+      <view class="doc-more">正文保存后以服务端自检结果为准，请人工核对实质响应。</view>
+    </view>
+  </block>
+
+  <!-- 编辑模式 -->
+  <block wx:else>
+    <view class="editor">
+      <view wx:for="{{editBlocks}}" wx:for-index="bi" wx:key="index"><text>{{item.type === 'h4' ? '小标题' : item.type === 'table' ? '表格标题' : '正文段落'}} · {{item.covers}}</text><textarea class="editor-area" value="{{item.text}}" data-index="{{bi}}" bindinput="onBlockInput" auto-height maxlength="-1" /><view wx:if="{{item.type === 'table'}}"><view class="table-row" wx:for="{{item.rows}}" wx:for-item="row" wx:for-index="ri" wx:key="index"><textarea class="table-cell" wx:for="{{row}}" wx:for-item="cell" wx:for-index="ci" wx:key="index" value="{{cell}}" data-block="{{bi}}" data-row="{{ri}}" data-cell="{{ci}}" bindinput="onCellInput" auto-height maxlength="2000" /></view></view></view>
+    </view>
+  </block>
+
+  <view class="placeholder-bar"></view>
+  <view class="note" wx:if="{{aiLabel}}">{{aiLabel}}</view>
+  <view class="aibar" wx:if="{{!editing}}">
+    <button class="ai-tool" disabled="{{busy}}" data-key="continue" bindtap="aiAction">✦ 续写</button>
+    <button class="ai-tool" disabled="{{busy}}" data-key="expand" bindtap="aiAction">↔ 扩写</button>
+    <button class="ai-tool" disabled="{{busy}}" data-key="polish" bindtap="aiAction">✎ 润色</button>
+    <button class="ai-tool" disabled="{{busy}}" data-key="chart" bindtap="aiAction">▤ 配图表</button>
+  </view>
+
+  <view class="bottombar">
+    <button wx:if="{{editing}}" class="btn" bindtap="saveEdit">确认修改</button>
+    <block wx:else><button class="btn ghost small" disabled="{{busy}}" bindtap="nextChapter">下一章</button><button class="btn" disabled="{{busy}}" bindtap="goCheck">自检并导出</button></block>
+  </view>
+</view>

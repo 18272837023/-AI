@@ -1,0 +1,53 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/projects/projects",
+    "pages/mine/mine",
+    "pages/create/create",
+    "pages/parsing/parsing",
+    "pages/analysis/analysis",
+    "pages/blueprint/blueprint",
+    "pages/outline/outline",
+    "pages/generating/generating",
+    "pages/fill/fill",
+    "pages/elements/elements",
+    "pages/chapter/chapter",
+    "pages/check/check",
+    "pages/export/export"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#F5F7FB",
+    "navigationBarTitleText": "AI 技术标",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F5F7FB"
+  },
+  "tabBar": {
+    "color": "#B4BAC4",
+    "selectedColor": "#165DFF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "工作台",
+        "iconPath": "images/tab/home.svg",
+        "selectedIconPath": "images/tab/home-on.svg"
+      },
+      {
+        "pagePath": "pages/projects/projects",
+        "text": "项目",
+        "iconPath": "images/tab/project.svg",
+        "selectedIconPath": "images/tab/project-on.svg"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/tab/mine.svg",
+        "selectedIconPath": "images/tab/mine-on.svg"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

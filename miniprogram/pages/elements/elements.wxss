@@ -1,0 +1,346 @@
+/* 概览 */
+.hero {
+  margin: 24rpx 36rpx 0;
+  background: linear-gradient(135deg, #F2F7FF, #EAF1FF);
+  border: 1rpx solid #D8E5FF;
+  border-radius: 32rpx;
+  padding: 32rpx;
+}
+
+.hero-t {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.hero-d {
+  font-size: 23rpx;
+  color: #3B5B95;
+  line-height: 1.7;
+  margin-top: 10rpx;
+}
+
+.hero-stats {
+  display: flex;
+  margin-top: 26rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid rgba(22, 93, 255, 0.12);
+}
+
+.hs {
+  flex: 1;
+  text-align: center;
+}
+
+.hs .n {
+  display: block;
+  font-size: 38rpx;
+  font-weight: 700;
+  letter-spacing: -1rpx;
+}
+
+.hs .n.brand {
+  color: var(--brand);
+}
+
+.hs .l {
+  font-size: 21rpx;
+  color: var(--sub);
+}
+
+/* 分组卡 */
+.grp {
+  margin: 20rpx 36rpx 0;
+  background: #fff;
+  border-radius: 28rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 28rpx rgba(29, 33, 41, 0.05);
+}
+
+.grp-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.grp-l {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.grp-el {
+  font-size: 20rpx;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 8rpx;
+  padding: 2rpx 10rpx;
+  font-weight: 600;
+  flex: none;
+}
+
+.grp-name {
+  font-size: 27rpx;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.declare {
+  flex: none;
+  font-size: 21rpx;
+  color: var(--sub);
+  border: 1rpx solid var(--line);
+  border-radius: 10rpx;
+  padding: 8rpx 14rpx;
+  line-height: 1;
+}
+
+.declare.on {
+  color: var(--accent);
+  border-color: rgba(255, 125, 0, 0.35);
+  background: var(--accent-soft);
+}
+
+.must {
+  flex: none;
+  font-size: 21rpx;
+  color: var(--red);
+  background: var(--red-soft);
+  border-radius: 10rpx;
+  padding: 8rpx 14rpx;
+  line-height: 1;
+}
+
+/* 可重复的条目 */
+.ent.is-rep {
+  margin-top: 24rpx;
+  padding: 20rpx 22rpx 4rpx;
+  background: #F8FAFD;
+  border: 1rpx solid #E9EEF6;
+  border-radius: 20rpx;
+}
+
+.ent-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6rpx;
+}
+
+.ent-no {
+  font-size: 23rpx;
+  font-weight: 600;
+  color: var(--sub2);
+}
+
+.ent-del {
+  font-size: 21rpx;
+  color: var(--sub);
+  padding: 4rpx 8rpx;
+}
+
+.add {
+  margin-top: 22rpx;
+  height: 76rpx;
+  border: 1rpx dashed rgba(22, 93, 255, 0.45);
+  border-radius: 18rpx;
+  color: var(--brand);
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F7FAFF;
+}
+
+.add:active {
+  background: var(--brand-soft);
+}
+
+.grp-ch {
+  font-size: 21rpx;
+  color: var(--sub);
+  margin-top: 12rpx;
+  padding-bottom: 20rpx;
+  border-bottom: 1rpx dashed var(--line);
+}
+
+/* 字段 */
+.fd {
+  margin-top: 24rpx;
+}
+
+.fd-lb {
+  font-size: 24rpx;
+  color: var(--sub2);
+  margin-bottom: 12rpx;
+}
+
+.fd-in {
+  height: 84rpx;
+  background: #F7F9FC;
+  border: 1rpx solid var(--line);
+  border-radius: 18rpx;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  color: var(--text);
+}
+
+.fd-in:focus {
+  border-color: rgba(22, 93, 255, 0.45);
+  background: #fff;
+}
+
+/* 长文本用多行显示，避免核对时看不到全文 */
+.fd-area {
+  height: auto;
+  min-height: 84rpx;
+  padding: 20rpx 24rpx;
+  line-height: 1.6;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ph {
+  color: #A9B0BC;
+  font-size: 25rpx;
+}
+
+.grp-hint {
+  font-size: 21rpx;
+  color: var(--sub);
+  line-height: 1.7;
+  margin-top: 22rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed var(--line);
+}
+
+/* 测试工具条 */
+.tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10rpx;
+  margin: 14rpx 36rpx 0;
+}
+
+.tool {
+  font-size: 21rpx;
+  color: var(--brand);
+}
+
+.tool-dot {
+  font-size: 21rpx;
+  color: #C9CFD9;
+}
+
+/* 字段分组小标题（不占字段数） */
+.fd-sec {
+  margin-top: 28rpx;
+  padding-top: 22rpx;
+  border-top: 1rpx dashed var(--line);
+  font-size: 22rpx;
+  font-weight: 600;
+  color: var(--sub2);
+  letter-spacing: 0.5rpx;
+}
+
+/* 固定选项 */
+.opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.opt {
+  height: 60rpx;
+  padding: 0 22rpx;
+  border-radius: 14rpx;
+  background: #F7F9FC;
+  border: 1rpx solid var(--line);
+  font-size: 24rpx;
+  color: var(--sub2);
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.opt.on {
+  background: var(--brand-soft);
+  border-color: rgba(22, 93, 255, 0.4);
+  color: var(--brand);
+  font-weight: 500;
+}
+
+/* AI 润色 */
+.polish {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 22rpx;
+  padding: 22rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(135deg, #F5F0FF, #EAF1FF);
+  border: 1rpx solid #DCD6FF;
+}
+
+.polish:active {
+  opacity: 0.9;
+}
+
+.polish.busy {
+  opacity: 0.65;
+}
+
+.polish-ic {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 12rpx;
+  background: #fff;
+  color: #7A5CFF;
+  font-size: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.polish-tx {
+  flex: 1;
+  min-width: 0;
+}
+
+.polish-t {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #4B3BA8;
+}
+
+.polish-d {
+  font-size: 20rpx;
+  color: #6B6390;
+  line-height: 1.6;
+  margin-top: 6rpx;
+}
+
+/* 已声明缺失 */
+.grp-off {
+  margin-top: 22rpx;
+  font-size: 22rpx;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 16rpx;
+  padding: 20rpx;
+  line-height: 1.7;
+}
+
+/* 说明 */
+.note {
+  margin: 26rpx 36rpx 0;
+  font-size: 21rpx;
+  color: var(--sub);
+  line-height: 1.7;
+}

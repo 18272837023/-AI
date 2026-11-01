@@ -1,0 +1,26 @@
+{
+  "name": "tender-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI 技术标 · P0 服务端（解析 → 施工图 → 要素表 → 正文 → 规则自检）",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "cli": "node cli.js",
+    "sample": "node scripts/make-samples.js",
+    "pretest": "node scripts/make-samples.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.20.2"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "description": "AI标书小程序 MVP - 上传招标文件，AI生成技术标初稿",
+  "miniprogramRoot": "miniprogram/",
+  "compileType": "miniprogram",
+  "libVersion": "3.5.5",
+  "appid": "touristappid",
+  "projectname": "AI-Biaoshu",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true,
+    "coverView": true,
+    "nodeModules": false,
+    "autoAudits": false,
+    "showShadowRootInWxmlPanel": true,
+    "scopeDataCheck": false,
+    "useCompilerModule": true
+  },
+  "condition": {}
+}

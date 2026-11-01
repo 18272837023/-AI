@@ -1,0 +1,390 @@
+/* 结果卡 */
+.result {
+  margin: 24rpx 36rpx 0;
+  border-radius: 32rpx;
+  padding: 34rpx;
+}
+
+.result.fail {
+  background: linear-gradient(135deg, #FFF3F1, #FFECE8);
+  border: 1rpx solid #FFD3CB;
+}
+
+.result.ok {
+  background: linear-gradient(135deg, #F1FBF3, #E8FFEA);
+  border: 1rpx solid #C7F0CE;
+}
+
+.r-title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.result.fail .r-title {
+  color: #C4342F;
+}
+
+.result.ok .r-title {
+  color: #127A2B;
+}
+
+.r-desc {
+  font-size: 23rpx;
+  line-height: 1.7;
+  margin-top: 10rpx;
+  color: #8A4B47;
+}
+
+.result.ok .r-desc {
+  color: #2F6B3D;
+}
+
+.r-stats {
+  display: flex;
+  margin-top: 26rpx;
+}
+
+.rs {
+  flex: 1;
+  text-align: center;
+}
+
+.rs .n {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: -1rpx;
+}
+
+.rs .n.red {
+  color: var(--red);
+}
+
+.rs .n.orange {
+  color: var(--accent);
+}
+
+.rs .n.green {
+  color: var(--green);
+}
+
+.rs .l {
+  font-size: 21rpx;
+  color: var(--sub);
+}
+
+/* 优化中的进度条与数字弱化 */
+.result.is-busy .r-stats {
+  opacity: 0.45;
+}
+
+.r-bar {
+  height: 8rpx;
+  border-radius: 8rpx;
+  background: rgba(22, 93, 255, 0.12);
+  margin-top: 24rpx;
+  overflow: hidden;
+}
+
+.r-bar-in {
+  height: 100%;
+  border-radius: 8rpx;
+  background: var(--brand);
+  transition: width 0.4s ease;
+}
+
+.r-last {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 22rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed rgba(29, 33, 41, 0.12);
+}
+
+.r-last-t {
+  font-size: 21rpx;
+  color: var(--brand);
+  background: rgba(22, 93, 255, 0.1);
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+  flex: none;
+}
+
+.r-last-x {
+  font-size: 23rpx;
+  line-height: 1.5;
+  color: var(--text);
+  flex: 1;
+}
+
+/* 怎么修 */
+.guide {
+  margin: 20rpx 36rpx 0;
+  background: #fff;
+  border-radius: 26rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 24rpx rgba(29, 33, 41, 0.04);
+  border: 1rpx solid #E9EEF6;
+}
+
+.gd-t {
+  font-size: 27rpx;
+  font-weight: 600;
+  margin-bottom: 18rpx;
+}
+
+.gd-line {
+  display: flex;
+  gap: 14rpx;
+  margin-bottom: 14rpx;
+}
+
+.gd-n {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 19rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-top: 2rpx;
+}
+
+.gd-x {
+  flex: 1;
+  font-size: 22rpx;
+  color: var(--sub2);
+  line-height: 1.7;
+}
+
+.gd-x .b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.gd-btn {
+  margin-top: 10rpx;
+  height: 78rpx;
+  border-radius: 20rpx;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 25rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx solid rgba(22, 93, 255, 0.25);
+}
+
+.gd-btn:active {
+  background: #DDE9FF;
+}
+
+/* 筛选 */
+.filters {
+  display: flex;
+  gap: 14rpx;
+  margin: 28rpx 36rpx 0;
+}
+
+.f {
+  flex: 1;
+  height: 64rpx;
+  border-radius: 18rpx;
+  background: #fff;
+  border: 1rpx solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 23rpx;
+  color: var(--sub);
+}
+
+.f.on {
+  background: var(--brand-soft);
+  border-color: rgba(22, 93, 255, 0.35);
+  color: var(--brand);
+  font-weight: 500;
+}
+
+/* 检查项 */
+.it {
+  margin: 16rpx 36rpx 0;
+  background: #fff;
+  border-radius: 26rpx;
+  padding: 26rpx;
+  box-shadow: 0 4rpx 24rpx rgba(29, 33, 41, 0.04);
+  border-left: 6rpx solid #E4E8F0;
+}
+
+.it.block {
+  border-left-color: var(--red);
+}
+
+.it.warn {
+  border-left-color: var(--accent);
+}
+
+.it.pass {
+  border-left-color: var(--green);
+}
+
+.it-hd {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.it-cat {
+  font-size: 21rpx;
+  color: var(--sub);
+  flex: 1;
+}
+
+.it-done {
+  font-size: 19rpx;
+  color: var(--green);
+  background: var(--green-soft);
+  border-radius: 8rpx;
+  padding: 3rpx 10rpx;
+}
+
+.it-badge {
+  font-size: 19rpx;
+  padding: 3rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.it-badge.block {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.it-badge.warn {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.it-badge.pass {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.it-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  margin-top: 12rpx;
+  line-height: 1.5;
+}
+
+.it-detail {
+  font-size: 23rpx;
+  color: var(--sub);
+  line-height: 1.7;
+  margin-top: 8rpx;
+}
+
+/* 怎么改 */
+.it-steps {
+  margin-top: 18rpx;
+  background: #F7F9FC;
+  border-radius: 18rpx;
+  padding: 18rpx 20rpx;
+}
+
+.st-lb {
+  font-size: 20rpx;
+  color: var(--sub);
+  letter-spacing: 1rpx;
+  margin-bottom: 12rpx;
+}
+
+.st-i {
+  display: flex;
+  gap: 10rpx;
+  margin-bottom: 8rpx;
+}
+
+.st-i:last-child {
+  margin-bottom: 0;
+}
+
+.st-n {
+  width: 26rpx;
+  height: 26rpx;
+  border-radius: 50%;
+  background: #E4E9F2;
+  color: var(--sub2);
+  font-size: 17rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-top: 4rpx;
+}
+
+.st-x {
+  flex: 1;
+  font-size: 22rpx;
+  color: var(--sub2);
+  line-height: 1.65;
+}
+
+.it-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx dashed var(--line);
+}
+
+.it-loc {
+  font-size: 21rpx;
+  color: #A9B0BC;
+  flex: 1;
+  min-width: 0;
+}
+
+.it-act {
+  flex: none;
+  height: 60rpx;
+  padding: 0 24rpx;
+  border-radius: 16rpx;
+  font-size: 23rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.it-act.auto {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 6rpx 18rpx rgba(22, 93, 255, 0.24);
+}
+
+.it-act.manual {
+  background: #fff;
+  color: var(--brand);
+  border: 1rpx solid rgba(22, 93, 255, 0.45);
+}
+
+.it-act:active {
+  opacity: 0.88;
+}
+
+.note {
+  margin: 24rpx 36rpx 0;
+  font-size: 21rpx;
+  color: #A9B0BC;
+  line-height: 1.7;
+}
+
+.gd-btn{width:100%;box-sizing:border-box;line-height:1.5}.it-act{line-height:1.4;white-space:nowrap;margin:0;font-family:inherit}

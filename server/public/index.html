@@ -1,0 +1,96 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>标书 AI · 本机测试</title>
+<style>body{font-family:system-ui,"Microsoft YaHei",sans-serif;background:#f4f6fa;color:#182637;margin:30px auto;max-width:1100px;padding:0 20px}h1{font-size:28px}section{background:white;padding:22px;border-radius:12px;margin:16px 0}button,select,input{font:inherit;padding:9px;margin:4px;border:1px solid #b9c6d5;border-radius:6px}button{cursor:pointer;background:#edf3ff}button:disabled{opacity:.45;cursor:wait}textarea{box-sizing:border-box;width:100%;min-height:140px;padding:12px;font:15px/1.7 monospace;border:1px solid #bdc8d7;border-radius:6px}label{display:block;margin-top:14px}small{color:#52657a}#status{white-space:pre-wrap;max-height:220px;overflow:auto}#check{white-space:pre-wrap}a{color:#1749a0}.row{display:flex;flex-wrap:wrap;align-items:center}.notice{color:#8a4800}#editor section{border:1px solid #dae1eb}input.title{width:85%}</style>
+<h1>标书 AI · 本机测试</h1><p>上传 → 解析并核对 → 施工图 → 填写要素 → 正文编辑 → 自检 → 下载 Word</p>
+<section><div id="mode">正在检测服务…</div><small>本页面用于本机测试。真实模型会把文档内容发送到你配置的模型服务。扫描 PDF 暂不支持。</small><div id="status" role="status"></div></section>
+<section><h2>1. 项目与招标文件</h2><div class="row"><input id="name" placeholder="新项目名称"><button id="create">新建项目</button><select id="projects"><option value="">选择已有项目</option></select><button id="refresh">刷新项目</button></div><input id="file" type="file" accept=".pdf,.docx,.txt"><button id="upload">上传到当前项目</button><p id="current">尚未选择项目</p></section>
+<section><h2>2. 逐步生成</h2><p class="notice">重跑上游会清除下游结果；请先保存或下载需要保留的稿件。</p><div id="stages"><button data-stage="parse">解析文件</button><button data-stage="blueprint">生成施工图</button><button data-stage="elements">生成要素表</button><button data-stage="generate">生成正文</button></div></section>
+<section><h2>3. 人工核对与编辑</h2><select id="field"><option value="parse">解析结果（项目、条款、评分）</option><option value="blueprint">施工图</option><option value="elements">要素表</option><option value="sections">正文</option></select><button id="load">载入当前阶段</button><button id="save">保存修改</button><small>保存前会校验版本，避免覆盖其他窗口的新内容。切换阶段或项目会放弃未保存修改。</small><div id="editor"></div></section>
+<section><h2>4. 自检与导出</h2><button id="runcheck">重新自检</button><button id="draft">下载测试草稿 Word</button><button id="final">下载正式 Word</button><p>正式文件须通过规则门禁；规则通过仍需人工核对招标要求、章节顺序与真实性。测试草稿首页明确标记“不用于投标”。</p><div id="check"></div></section>
+<script>
+const $ = id => document.getElementById(id);
+let current = null, loaded = null, editing = null, busy = false;
+function status(text) { $('status').textContent = text; }
+async function api(url, method = 'GET', body) {
+  const res = await fetch(url, { method, ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) });
+  const json = await res.json();
+  if (!res.ok || !json.ok) throw Error(json.error?.message || '请求失败');
+  return json.data;
+}
+async function act(fn) {
+  if (busy) return;
+  busy = true; document.querySelectorAll('button,select,input').forEach(b => b.disabled = true);
+  try { await fn(); } catch(e) { status('操作未完成：' + e.message); }
+  finally { busy = false; document.querySelectorAll('button,select,input').forEach(b => b.disabled = false); }
+}
+function projectId() { if (!current) throw Error('请先新建或选择项目'); return '/v1/tenders/' + current.id; }
+function showCheck(check) { $('check').textContent = check ? check.gate.title + '\n' + check.items.map(i => `${({block:'阻断',warn:'提醒',pass:'通过'})[i.level]}：${i.title}\n${i.detail}`).join('\n\n') : '尚未自检'; }
+async function refresh() {
+  const list = await api('/v1/tenders'); $('projects').replaceChildren(new Option('选择已有项目', ''));
+  list.forEach(p => $('projects').add(new Option(p.name, p.id)));
+  if (current) $('projects').value = current.id;
+}
+async function detail() { current = await api(projectId()); $('current').textContent = `${current.name} ｜ 文件：${current.file?.name || '未上传'} ｜ 状态：${current.status} ｜ 版本 ${current.revision}`; showCheck(current.check); if (current.parse?.meta?.degraded && Object.values(current.parse.meta.degraded).some(Boolean)) $('current').textContent += ' ｜ 注意：解析含规则兜底，请人工核对'; }
+function fieldInput(parent, label, value, set, multiline = true) {
+  const l = document.createElement('label'); l.textContent = label;
+  const input = document.createElement(multiline ? 'textarea' : 'input'); input.value = value || ''; input.oninput = () => set(input.value);
+  l.append(input); parent.append(l);
+}
+function draw() {
+  $('editor').replaceChildren(); loaded = current.revision; editing = structuredClone(current[$('field').value]);
+  const field = $('field').value;
+  if (!editing) { $('editor').textContent = '该阶段尚未生成'; return; }
+  if (field === 'sections') {
+    editing.forEach(s => {
+      const box = document.createElement('section'); fieldInput(box, '章节标题', s.title, v => s.title = v, false);
+      s.blocks.forEach(b => fieldInput(box, b.type === 'h4' ? '小标题' : `正文（关联要素：${b.covers.join('、')}）`, b.text, v => b.text = v)); $('editor').append(box);
+    });
+  } else if (field === 'elements') {
+    editing.forEach(g => {
+      const box = document.createElement('section'), h = document.createElement('h3'); h.textContent = g.item; box.append(h);
+      g.rows.forEach(r => { const title = document.createElement('h4'); title.textContent = r.name; box.append(title);
+        for (const [key, label] of [['approach','具体做法'],['params','参数（请依据真实资料填写）'],['owner','责任岗位'],['frequency','频次']]) fieldInput(box, label, r[key], v => r[key] = v, key === 'approach');
+      }); $('editor').append(box);
+    });
+  } else {
+    const tip = document.createElement('p'); tip.textContent = '以下为结构化核对数据。可修改内容，保留字段名称、评分项 ID 和要素 ID；保存会验证结构。'; $('editor').append(tip);
+    const text = document.createElement('textarea'); text.id = 'json'; text.style.minHeight = '480px'; text.value = JSON.stringify(editing, null, 2); $('editor').append(text);
+  }
+}
+$('create').onclick = () => act(async () => { current = await api('/v1/tenders', 'POST', {name:$('name').value}); await refresh(); await detail(); draw(); status('项目已创建'); });
+$('projects').onchange = () => act(async () => { if (!$('projects').value) return; current = {id:$('projects').value}; await detail(); draw(); status('已载入项目'); });
+$('refresh').onclick = () => act(async () => { await refresh(); if (current) { await detail(); draw(); } });
+$('upload').onclick = () => act(async () => {
+  const url = projectId(), file = $('file').files[0]; if (!file) throw Error('请选择文件');
+  if (!confirm('上传会清除当前项目的旧解析和正文，是否继续？')) return;
+  const res = await fetch(url + '/files', {method:'POST', headers:{'x-filename':encodeURIComponent(file.name)}, body:file}); const json = await res.json(); if (!json.ok) throw Error(json.error.message);
+  await detail(); draw(); status('上传完成，可以解析');
+});
+$('stages').onclick = e => { const stage = e.target.dataset.stage; if (!stage) return; act(async () => {
+  const url = projectId(); if (!confirm('执行此阶段会清除该阶段及下游结果，是否继续？')) return;
+  const started = await api(url + '/' + stage, 'POST', {});
+  while (true) {
+    const job = await api('/v1/jobs/' + started.jobId); status(`${job.label} · ${job.progress}%\n${job.logs.slice(-6).map(l => l.msg).join('\n')}`);
+    if (job.status === 'failed') throw Error(job.error);
+    if (job.status === 'done') break;
+    await new Promise(r => setTimeout(r, 1200));
+  }
+  await detail(); $('field').value = stage === 'generate' ? 'sections' : stage; draw(); status('阶段完成，请核对结果后继续');
+}); };
+$('load').onclick = () => act(async () => { await detail(); draw(); });
+$('field').onchange = () => { if (current) draw(); };
+$('save').onclick = () => act(async () => {
+  const url = projectId(), field = $('field').value;
+  if (!editing) throw Error('没有可保存内容');
+  const value = $('json') ? JSON.parse($('json').value) : editing;
+  if (field !== 'sections' && !confirm('保存会清除下游结果，请确认已保留需要的稿件。')) return;
+  await api(url + '/' + field, 'PUT', {revision:loaded, value}); await detail(); draw(); status('修改已保存到本机');
+});
+$('runcheck').onclick = () => act(async () => { showCheck(await api(projectId() + '/check', 'POST', {})); status('自检完成'); });
+async function download(draft) {
+  const res = await fetch(projectId() + '/export' + (draft ? '?draft=1' : ''));
+  if (!res.ok) { const json = await res.json(); throw Error(json.error.message); }
+  const url = URL.createObjectURL(await res.blob()), link = document.createElement('a'); link.href = url; link.download = draft ? '测试草稿.docx' : '技术标.docx'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); status('Word 文件已下载，内容以已保存版本为准');
+}
+$('draft').onclick = () => act(() => download(true)); $('final').onclick = () => act(() => download(false));
+act(async () => { const h = await api('/v1/health'); $('mode').textContent = h.llm.live ? `真实模型：${h.llm.model}` : '当前是规则模拟模式：用于验证流程，不能据此评价真实 AI 效果。请在 server/.env 配置 live 模式后重启。'; await refresh(); });
+</script></html>

@@ -1,0 +1,46 @@
+<view class="page">
+
+  <!-- 问候 -->
+  <view class="home-top">
+    <view class="greet">{{greeting}}</view>
+    <view class="h1">今天要投哪个标？</view>
+  </view>
+
+  <!-- 新建技术标 CTA -->
+  <view class="cta" bindtap="goCreate">
+    <view class="badge">本机测试</view>
+    <view class="cta-title">新建技术标</view>
+    <view class="cta-desc">上传招标文件，AI 提取技术标评分细则并生成技术方案初稿</view>
+    <view class="cta-go">开始 →</view>
+  </view>
+
+  <!-- 进行中 -->
+  <view class="sect pad">
+    <view class="sect-hd">
+      <text class="h3">进行中</text>
+      <text class="more" bindtap="goAll">全部项目</text>
+    </view>
+
+    <view class="empty" wx:if="{{projects.length === 0}}">
+      <view class="empty-ic">＋</view>
+      <view class="empty-t">还没有技术标项目</view>
+      <view class="empty-d">上传招标文件后，最近处理的三个项目会显示在这里</view>
+    </view>
+
+    <view class="proj" wx:for="{{projects}}" wx:key="id" data-id="{{item.id}}" bindtap="goProject">
+      <view class="proj-cover" style="background:{{item.coverColor}}">{{item.coverText}}</view>
+      <view class="proj-info">
+        <view class="proj-name">{{item.name}}</view>
+        <view class="proj-meta">
+          <text class="tag {{item.tagType}}">{{item.statusText}}</text>
+          <text class="proj-time">{{item.updateText}}</text>
+        </view>
+        <view class="proj-bar" wx:if="{{item.progress > 0}}">
+          <view class="proj-bar-in" style="width:{{item.progress}}%;background:{{item.progressColor}}"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view style="height:40rpx"></view>
+</view>

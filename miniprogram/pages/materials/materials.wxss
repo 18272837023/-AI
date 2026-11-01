@@ -1,0 +1,26 @@
+.page {
+  padding-bottom: 40rpx;
+}
+
+.ph-t {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16rpx;
+}
+
+.ph-d {
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--sub);
+  margin-bottom: 12rpx;
+}
+
+.ph-gap {
+  margin-top: 24rpx;
+}
+
+.card .btn {
+  width: 100%;
+  margin-top: 16rpx;
+}

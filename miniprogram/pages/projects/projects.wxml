@@ -1,0 +1,34 @@
+<view class="page">
+  <view class="filters">
+    <view
+      class="chip {{active === index ? 'on' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="*this"
+      data-index="{{index}}"
+      bindtap="pick"
+    >{{item}}</view>
+  </view>
+
+  <view class="pad" style="margin-top:24rpx">
+    <view class="proj" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="open">
+      <view class="proj-cover" style="background:{{item.coverColor}}">{{item.coverText}}</view>
+      <view class="proj-info">
+        <view class="proj-name">{{item.name}}</view>
+        <view class="proj-meta">
+          <text class="tag {{item.tagType}}">{{item.statusText}}</text>
+          <text class="proj-time">{{item.updateText}}</text>
+        </view>
+        <view class="proj-bar" wx:if="{{item.progress > 0}}">
+          <view class="proj-bar-in" style="width:{{item.progress}}%;background:{{item.progressColor}}"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="empty" wx:if="{{list.length === 0}}">
+      <view class="empty-t">还没有技术标项目</view>
+      <view class="empty-d">点下面的「新建技术标」，上传招标文件即可开始</view>
+    </view>
+
+    <view class="create-entry" bindtap="create">+ 新建技术标</view>
+  </view>
+</view>

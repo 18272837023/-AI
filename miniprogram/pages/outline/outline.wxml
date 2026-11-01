@@ -1,0 +1,63 @@
+<import src="/components/flowbar.wxml" />
+<view class="page">
+  <template is="flowbar" data="{{step: 3}}" />
+  <!-- 概览 -->
+  <view class="ov">
+    <view class="ov-item"><text class="num">{{stats.chapters}}</text><text class="lb">章节</text></view>
+    <view class="ov-item"><text class="num">{{stats.words}}<text class="unit">万</text></text><text class="lb">预计字数</text></view>
+    <view class="ov-item"><text class="num">{{stats.elementsDone}}<text class="unit">/{{stats.elementsTotal}}</text></text><text class="lb">已完成 / 全部要素</text></view>
+  </view>
+
+  <!-- 模式条 -->
+  <view class="modebar">
+    <view class="mb-l">
+      <text class="mb-tag">{{project.outlineModeText}}</text>
+      <text class="mb-d">请核对原文指定的章节与顺序</text>
+    </view>
+    <text class="mb-lock">待人工核对</text>
+  </view>
+
+  <!-- 大纲列表 -->
+  <view class="outline">
+    <block wx:for="{{outline}}" wx:key="no">
+      <view class="ol">
+        <view class="grip">{{item.locked ? '·' : '⋮⋮'}}</view>
+        <view class="ol-body">
+          <view class="ol-title"><text class="no">{{item.no}}</text>{{item.title}}</view>
+          <view class="ol-meta">
+            <text class="tag blue" wx:if="{{item.score > 0}}">{{item.score}} 分</text>
+            <text class="tag gray" wx:else>加分项</text>
+            <text class="dep {{item.depend}}">{{item.depText}}</text>
+            <text class="ol-words">{{item.coverageLabel}}</text>
+          </view>
+        </view>
+        <view class="ol-more" data-index="{{index}}" bindtap="openChapter">›</view>
+      </view>
+
+      <view class="ol sub" wx:for="{{item.subs}}" wx:for-item="sub" wx:key="*this">
+        <view class="ol-body"><view class="sub-title">{{sub}}</view></view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 新增（strict 下禁止） -->
+  <view class="pad" style="margin-top:24rpx">
+    <view class="add-chapter locked" bindtap="addChapter">+ 章节管理（查看当前范围）</view>
+  </view>
+
+  <!-- 说明 -->
+  <view class="aihint">
+    <view class="ai-badge">i</view>
+    <view class="ai-text">
+      <text class="b">编制提示</text>
+      大纲约束来源：{{project.modeEvidence.src}}。当前按评分项组织章节；严格目录的标题和顺序需要人工复核。
+    </view>
+  </view>
+
+  <view class="placeholder-bar"></view>
+
+  <view class="bottombar">
+    <button class="btn ghost small" bindtap="checkSheet">要素表</button>
+    <button class="btn" bindtap="startGenerate">开始生成正文</button>
+  </view>
+</view>

@@ -1,0 +1,254 @@
+.doc-page {
+  background: #fff;
+  /* 底部留白统一由 .placeholder-bar 承担，这里不再叠加，否则会出现大片空白 */
+  padding-bottom: 0;
+}
+
+/* 待补字段提醒条 */
+.fillbar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 0 0 4rpx;
+  padding: 22rpx 40rpx;
+  background: var(--brand-soft);
+  border-bottom: 1rpx solid #D8E5FF;
+}
+
+.fb-ic {
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 10rpx;
+  background: var(--brand);
+  color: #fff;
+  font-size: 19rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.fb-tx {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  color: #3B5B95;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fb-go {
+  flex: none;
+  font-size: 22rpx;
+  color: var(--brand);
+  font-weight: 500;
+}
+
+.doc {
+  padding: 32rpx 40rpx 0;
+}
+
+.doc-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: -0.4rpx;
+  margin-bottom: 12rpx;
+}
+
+.doc-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 22rpx;
+  color: var(--sub);
+  padding-bottom: 26rpx;
+  border-bottom: 1rpx solid var(--line);
+  margin-bottom: 30rpx;
+}
+
+.doc-meta .dot {
+  color: #D5DAE3;
+}
+
+.edit-btn {
+  margin-left: auto;
+  color: var(--brand);
+  font-size: 24rpx;
+}
+
+.doc-h4 {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #0E1A2B;
+  margin: 40rpx 0 18rpx;
+}
+
+.doc-p {
+  font-size: 28rpx;
+  line-height: 2;
+  color: #333A45;
+  margin-bottom: 24rpx;
+  text-align: justify;
+}
+
+.doc-quote {
+  background: #F7F9FC;
+  border-left: 6rpx solid #C9D6EF;
+  padding: 22rpx 26rpx;
+  font-size: 24rpx;
+  line-height: 1.85;
+  color: var(--sub2);
+  border-radius: 0 16rpx 16rpx 0;
+  margin-bottom: 28rpx;
+}
+
+.doc-more {
+  font-size: 24rpx;
+  color: #A9B0BC;
+  line-height: 1.8;
+  padding-bottom: 20rpx;
+}
+
+/* 编辑器：高度随正文增长，页面整体滚动，不做内嵌滚动区 */
+.editor {
+  padding: 32rpx 40rpx 0;
+}
+
+.editor-area {
+  width: 100%;
+  /* 只在空文档时兜一个最小可点区域；有内容时由 auto-height 撑开 */
+  min-height: 320rpx;
+  font-size: 28rpx;
+  line-height: 2;
+  color: #333A45;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 移动端不显示滚动条 */
+.editor-area::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* 要素清单 */
+.els {
+  margin-bottom: 26rpx;
+  background: #F7F9FC;
+  border-radius: 22rpx;
+  padding: 22rpx 24rpx;
+}
+
+.els-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14rpx;
+}
+
+.els-t {
+  font-size: 22rpx;
+  color: var(--sub);
+}
+
+.els-n {
+  font-size: 22rpx;
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.els-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.elc {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 8rpx 14rpx;
+  font-size: 21rpx;
+}
+
+.elc-dot {
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.elc.ok .elc-dot {
+  color: var(--green);
+}
+
+.elc.todo {
+  background: #FFFBF2;
+}
+
+.elc.todo .elc-dot {
+  color: var(--accent);
+}
+
+.elc-n {
+  color: var(--sub2);
+}
+
+/* 评分档次 */
+.tier {
+  background: #F7F9FC;
+  border-radius: 18rpx;
+  padding: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.tier-lb {
+  display: block;
+  font-size: 20rpx;
+  color: var(--sub);
+  margin-bottom: 6rpx;
+}
+
+.tier-tx {
+  font-size: 22rpx;
+  color: var(--sub2);
+  line-height: 1.7;
+}
+
+/* 占位符 */
+.doc-ph {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  background: #FFFBF2;
+  border: 1rpx dashed #F5C97A;
+  border-radius: 16rpx;
+  padding: 18rpx 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.ph-tag {
+  flex: none;
+  font-size: 19rpx;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 8rpx;
+  padding: 3rpx 10rpx;
+}
+
+.ph-tx {
+  font-size: 23rpx;
+  color: #8A5B22;
+  line-height: 1.7;
+}
+
+.table-row{display:flex}.table-cell{flex:1;padding:12rpx;border:1rpx solid #dde3ed;font-size:22rpx;white-space:pre-wrap}.ai-tool{border:0;background:transparent;font-size:23rpx;padding:0;line-height:1.6}.aibar{z-index:10}.doc-page .placeholder-bar{height:280rpx}
+
+.aibar{position:fixed;left:28rpx;right:28rpx;bottom:calc(170rpx + env(safe-area-inset-bottom));background:rgba(29,33,41,.94);border-radius:30rpx;padding:16rpx 12rpx;display:flex;z-index:46;box-shadow:0 20rpx 56rpx #0003}.ai-tool{flex:1;color:white;text-align:center;padding:10rpx 0;border-radius:18rpx}.ai-tool[disabled]{color:#999}.doc-table{margin-bottom:28rpx}

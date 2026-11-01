@@ -1,0 +1,75 @@
+<import src="/components/flowbar.wxml" />
+<view class="page">
+  <template is="flowbar" data="{{step: 3}}" />
+
+  <!-- 结果 -->
+  <view class="result {{check.blocking > 0 ? 'fail' : 'ok'}} {{optimizing ? 'is-busy' : ''}}">
+    <view class="r-title" wx:if="{{optimizing}}">AI 正在优化正文…</view>
+    <view class="r-title" wx:else>{{check.blocking > 0 ? '还有 ' + check.blocking + ' 项阻断，暂不可导出' : check.warning > 0 ? '阻断已清零，仍有提醒' : '全部检查通过'}}</view>
+    <view class="r-desc" wx:if="{{optimizing}}">{{jobLabel}} · {{progress}}%　完成后自动刷新下面的数字</view>
+    <view class="r-desc" wx:else>{{check.blocking > 0 ? '按下面的顺序处理即可，每项都写了具体改法。' : '可以导出。建议再核对一遍页数与暗标信息。'}}</view>
+    <view class="r-stats">
+      <view class="rs"><text class="n red">{{check.blocking}}</text><text class="l">阻断</text></view>
+      <view class="rs"><text class="n orange">{{check.warning}}</text><text class="l">警告</text></view>
+      <view class="rs"><text class="n green">{{check.passed}}</text><text class="l">通过</text></view>
+    </view>
+    <view class="r-bar" wx:if="{{optimizing}}"><view class="r-bar-in" style="width:{{progress}}%"></view></view>
+    <view class="r-last" wx:if="{{lastRun && !optimizing}}">
+      <text class="r-last-t">上次优化</text>
+      <text class="r-last-x">{{lastRun.fixed ? '修复 ' + lastRun.fixed + ' 处，阻断 ' + lastRun.before + ' → ' + lastRun.after + '。' + lastRun.message : lastRun.message}}</text>
+    </view>
+  </view>
+
+  <view class="guide"><view class="gd-t">AI 先优化，你再补真实信息</view><view class="gd-line">方案缺写、要素遗漏和文风问题由 AI 修改正文；真实经历和入场安排请在待补字段填写。</view><button class="gd-btn" disabled="{{busy || optimizing || !check.auto}}" bindtap="fixAllAuto">{{optimizing ? 'AI 正在优化 ' + progress + '%' : 'AI 一键优化（' + check.auto + ' 项）'}}</button></view>
+  <!-- 筛选 -->
+  <view class="filters">
+    <view
+      class="f {{filter === item.key ? 'on' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="setFilter"
+    >{{item.name}}</view>
+  </view>
+
+  <!-- 清单 -->
+  <view class="it {{item.level}}" wx:for="{{shown}}" wx:key="id">
+    <view class="it-hd">
+      <text class="it-cat">{{item.catText}}</text>
+      <text class="it-badge {{item.level}}">{{item.level === 'block' ? '阻断' : (item.level === 'warn' ? '警告' : '通过')}}</text>
+      <text class="it-done" wx:if="{{item.resolved}}">已修复</text>
+    </view>
+    <view class="it-title">{{item.title}}</view>
+    <view class="it-detail">{{item.detail}}</view>
+
+    <view class="it-steps" wx:if="{{item.steps}}">
+      <view class="st-lb">怎么改</view>
+      <view class="st-i" wx:for="{{item.steps}}" wx:for-item="s" wx:key="index">
+        <text class="st-n">{{index + 1}}</text>
+        <text class="st-x">{{s}}</text>
+      </view>
+    </view>
+
+    <view class="it-foot">
+      <text class="it-loc">{{item.loc}}</text>
+      <button
+        class="it-act {{item.fixType}}"
+        wx:if="{{item.level !== 'pass'}}"
+        data-id="{{item.id}}"
+        bindtap="primary"
+        disabled="{{busy || optimizing}}"
+      >{{optimizing && item.id === activeIssueId ? '优化中 ' + progress + '%' : (item.fixLabel || '编辑正文')}} ›</button>
+    </view>
+  </view>
+
+  <view class="note">
+    当前检查条款锚点、要素关联、占位符、敏感词和文风。页数与实质响应仍需人工复核。
+  </view>
+
+  <view class="placeholder-bar"></view>
+
+  <view class="bottombar">
+    <button class="btn ghost small" disabled="{{busy || optimizing}}" bindtap="rerun">重新自检</button>
+    <button class="btn" disabled="{{busy || optimizing || check.blocking > 0}}" bindtap="goExport">{{optimizing ? '优化中，请稍候' : (check.blocking > 0 ? '阻断项未清零' : '导出技术标')}}</button>
+  </view>
+</view>

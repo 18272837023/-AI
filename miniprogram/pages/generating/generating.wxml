@@ -1,0 +1,46 @@
+<import src="/components/flowbar.wxml" />
+<view class="page">
+  <template is="flowbar" data="{{step: 3}}" />
+  <view class="genhd">
+    <view class="gen-row">
+      <view class="gen-pct">{{percent}}<text class="pct">%</text></view>
+      <view class="gen-word">{{phaseText}}</view>
+    </view>
+    <view class="pbar"><view class="pbar-in" style="width:{{percent}}%"></view></view>
+
+    <view class="steps2">
+      <view class="s2 {{stage >= 1 ? 'on' : ''}}"><text class="s2n">1</text>准备要素表</view>
+      <view class="s2-ln"></view>
+      <view class="s2 {{stage >= 2 ? 'on' : ''}}"><text class="s2n">2</text>按要素表展开正文</view>
+      <view class="s2-ln"></view>
+      <view class="s2 {{stage >= 3 ? 'on' : ''}}"><text class="s2n">3</text>补充必填字段</view>
+    </view>
+  </view>
+
+  <view class="glist">
+    <view class="gitem" wx:for="{{chapters}}" wx:key="id">
+      <view class="st {{item.status}}">
+        <text wx:if="{{item.status === 'ok' || item.status === 'prepared'}}">✓</text>
+        <view wx:elif="{{item.status === 'sheet' || item.status === 'write'}}" class="chapter-spinner"></view>
+        <text wx:elif="{{item.status === 'error'}}">!</text>
+        <text wx:else>{{item.index}}</text>
+      </view>
+      <view class="gt">
+        <view class="gt-title">{{item.title}}</view>
+        <view class="gt-status {{item.status}}">{{item.statusText}}</view>
+        <view class="gt-meta">{{item.wordLabel}} · {{item.elementLabel}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="gen-tip">
+    字数按每条要素约 150—300 字估算，完成后显示实际字数。\n要素数量来自已拆解的清单，最终内容仍需人工核对。
+  </view>
+
+  <view class="placeholder-bar"></view>
+
+  <view class="bottombar">
+    <button class="btn ghost" bindtap="toBackground">后台生成</button>
+  </view>
+<view class="note" wx:if="{{error}}">{{error}}</view><button class="btn ghost" wx:if="{{error}}" disabled="{{busy}}" bindtap="start">重试</button>
+</view>

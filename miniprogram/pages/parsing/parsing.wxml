@@ -1,0 +1,32 @@
+<import src="/components/flowbar.wxml" />
+<view class="page">
+  <template is="flowbar" data="{{step: 2}}" />
+  <view class="parse-wrap">
+    <view class="ring" style="background: conic-gradient(#165DFF {{percent}}%, #E9EDF5 0);">
+      <view class="ring-inner">
+        <view class="ring-num">{{percent}}<text class="pct">%</text></view>
+        <view class="ring-label">解析中</view>
+      </view>
+    </view>
+
+    <view class="parse-title">正在解析招标文件</view>
+    <view class="parse-desc">{{projectName}}</view>
+    <view class="parse-eta">进度来自服务端实际任务</view>
+  </view>
+
+  <view class="plist">
+    <view class="pitem {{item.status}}" wx:for="{{steps}}" wx:key="text">
+      <view class="dot">
+        <text wx:if="{{item.status === 'done'}}">✓</text>
+        <text wx:else>{{index + 1}}</text>
+      </view>
+      <text class="ptext">{{item.text}}</text>
+      <text class="pright">
+        {{item.status === 'done' ? '完成' : (item.status === 'now' ? '进行中' : '等待')}}
+      </text>
+    </view>
+  </view>
+
+  <view class="parse-tip">离开后可从项目列表重新打开并查看任务</view>
+<view class="note" wx:if="{{error}}">{{error}}</view><button class="btn ghost" wx:if="{{error}}" bindtap="start">重试</button>
+</view>

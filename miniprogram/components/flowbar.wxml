@@ -1,0 +1,25 @@
+<!--
+  流程进度条（跨页共用模板）
+  用法：<import src="/components/flowbar.wxml" />
+        <template is="flowbar" data="{{step: 2}}" />
+  step：1 上传文件 / 2 AI 解析 / 3 生成技术标
+  样式在 app.wxss 的「流程进度条」段
+-->
+<template name="flowbar">
+  <view class="flowbar">
+    <view class="fb {{step === 1 ? 'on' : ''}} {{step > 1 ? 'done' : ''}}">
+      <view class="fb-n">{{step > 1 ? '✓' : '1'}}</view>
+      <text class="fb-t">上传文件</text>
+    </view>
+    <view class="fb-ln {{step > 1 ? 'on' : ''}}"></view>
+    <view class="fb {{step === 2 ? 'on' : ''}} {{step > 2 ? 'done' : ''}}">
+      <view class="fb-n">{{step > 2 ? '✓' : '2'}}</view>
+      <text class="fb-t">AI 解析</text>
+    </view>
+    <view class="fb-ln {{step > 2 ? 'on' : ''}}"></view>
+    <view class="fb {{step === 3 ? 'on' : ''}} {{step > 3 ? 'done' : ''}}">
+      <view class="fb-n">{{step > 3 ? '✓' : '3'}}</view>
+      <text class="fb-t">生成技术标</text>
+    </view>
+  </view>
+</template>

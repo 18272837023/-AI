@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 标书 · 真实文件测试</title>
+<link rel="stylesheet" href="player.css?v=2">
+</head>
+<body>
+
+<div class="stage">
+  <aside class="side">
+    <div class="pv-brand">
+      <div class="logo">标</div>
+      <div>
+        <div class="pv-brand-name">AI 标书测试</div>
+        <div class="pv-brand-sub">原有界面 · 已连接本机服务</div>
+      </div>
+    </div>
+
+    <div class="tip">
+      <b>从新建技术标开始</b>
+      选择真实文件，完成解析、生成、人工编辑和 Word 下载。首页显示当前模型模式。
+    </div>
+
+    <div class="nav-title">页面</div>
+    <div class="pages" id="pages"></div>
+
+    <div class="side-foot">
+      <button class="mini-btn" id="reload">重新加载</button>
+      <div class="hint">项目保存在本机；刷新可从项目列表继续</div>
+    </div>
+  </aside>
+
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="right">
+          <span class="sig"><i></i><i></i><i></i><i></i></span>
+          <span class="wifi">◗</span>
+          <span class="bat"><i></i></span>
+        </span>
+      </div>
+
+      <div class="navbar" id="navbar">
+        <div class="nav-back" id="navback">‹</div>
+        <div class="nav-title" id="navtitle"></div>
+      </div>
+
+      <div class="mp-page" id="content"></div>
+      <div class="mp-tabbar" id="tabbar"></div>
+      <div class="mp-toast" id="toast"></div>
+
+      <!-- 仿微信 wx.showModal（预览器专用，真机用原生弹窗） -->
+      <div class="mp-modal" id="modal">
+        <div class="mp-modal-mask" id="modal-mask"></div>
+        <div class="mp-modal-box">
+          <div class="mp-modal-title" id="modal-title"></div>
+          <div class="mp-modal-body" id="modal-body"></div>
+          <div class="mp-modal-acts">
+            <div class="mp-modal-btn cancel" id="modal-cancel">取消</div>
+            <div class="mp-modal-btn ok" id="modal-ok">确定</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="boot" id="boot">
+        <div class="boot-ring"></div>
+        <div class="boot-text">正在加载小程序…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="runtime.js?v=2"></script>
+</body>
+</html>

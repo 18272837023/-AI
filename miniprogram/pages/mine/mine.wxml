@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="pad">
+    <view class="card">
+      <view class="ph-t">本机测试模式</view>
+      <view class="ph-d">当前版本只在本机运行，没有登录、付费或账户管理。项目数据保存在本机服务端，换设备不会同步。</view>
+      <view class="ph-row">
+        <text class="ph-k">服务地址</text>
+        <text class="ph-v">{{api}}</text>
+      </view>
+      <view class="ph-row">
+        <text class="ph-k">技术标项目</text>
+        <text class="ph-v">{{count}}</text>
+      </view>
+    </view>
+
+    <view class="card ph-gap">
+      <view class="ph-t">关于这个版本</view>
+      <view class="ph-d">只做技术标（施工组织设计、技术方案、服务方案）。商务标、资格文件、报价需另行编制。</view>
+      <view class="ph-d">解析、施工图、要素表、正文生成与自检都在服务端完成；规则自检不通过时不能导出正式稿。</view>
+    </view>
+
+    <button class="btn ghost ph-btn" bindtap="goHome">返回工作台</button>
+  </view>
+</view>

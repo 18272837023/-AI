@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="pad">
+    <view class="card">
+      <view class="ph-t">技术素材库</view>
+      <view class="ph-d">素材库还未接入本机服务。当前版本生成正文所需的素材由 AI 在生成阶段按项目现场组装，不需要事先上传。</view>
+      <view class="ph-d">后续接入后只收技术类素材：工艺标准、专项方案、设备参数、现场照片；不收资质证书与业绩合同。</view>
+    </view>
+
+    <view class="card ph-gap">
+      <view class="ph-t">现在能做什么</view>
+      <view class="ph-d">从工作台上传招标文件，解析 → 施工图 → 要素表 → 正文 → 自检 → 导出，整条链路已可用。</view>
+      <button class="btn" bindtap="goCreate">去新建技术标</button>
+    </view>
+  </view>
+</view>
