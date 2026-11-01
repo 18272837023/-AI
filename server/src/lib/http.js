@@ -135,6 +135,7 @@ function createRouter(routes, opts) {
     let url;
     try {
       url = new URL(req.url, 'http://' + (req.headers.host || 'localhost'));
+      if (options.beforeRequest && !options.beforeRequest(req, res, url)) return;
       if (req.method === 'OPTIONS') {
         res.writeHead(204, {
           'access-control-allow-origin': '*',

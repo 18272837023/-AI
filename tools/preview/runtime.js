@@ -858,17 +858,17 @@
     },
     request: function(o) {
       var controller = new AbortController(), timer = setTimeout(function(){controller.abort();},o.timeout||60000);
-      fetch(localUrl(o.url), {method:o.method||'GET', headers:{'content-type':'application/json'}, body:o.data===undefined?undefined:JSON.stringify(o.data),signal:controller.signal})
+      fetch(localUrl(o.url), {method:o.method||'GET', headers:Object.assign({'content-type':'application/json'},o.header||{}), body:o.data===undefined?undefined:JSON.stringify(o.data),signal:controller.signal})
         .then(async function(r){var data=await r.json(); if(o.success)o.success({statusCode:r.status,data:data});})
         .catch(function(e){if(o.fail)o.fail(e);}).finally(function(){clearTimeout(timer);});
     },
     uploadFile: function(o) {
       var file=fileCache.get(o.filePath); if(!file){if(o.fail)o.fail({errMsg:'文件失效，请重新选择'});return;}
       var form=new FormData(); form.append(o.name||'file',file,file.name);
-      fetch(localUrl(o.url),{method:'POST',body:form}).then(async function(r){if(o.success)o.success({statusCode:r.status,data:await r.text()});}).catch(function(e){if(o.fail)o.fail(e);});
+      fetch(localUrl(o.url),{method:'POST',headers:o.header||{},body:form}).then(async function(r){if(o.success)o.success({statusCode:r.status,data:await r.text()});}).catch(function(e){if(o.fail)o.fail(e);});
     },
     downloadFile: function(o) {
-      fetch(localUrl(o.url)).then(async function(r){
+      fetch(localUrl(o.url),{headers:o.header||{}}).then(async function(r){
         if(!r.ok){if(o.success)o.success({statusCode:r.status});return;}
         var url=URL.createObjectURL(await r.blob()); if(o.success)o.success({statusCode:r.status,tempFilePath:url});
       }).catch(function(e){if(o.fail)o.fail(e);});

@@ -32,6 +32,7 @@ GET  /v1/tenders/:id/jobs
 `;
 
 const server = createRouter(routes, {
+  beforeRequest: require('./test-access').testAccess(),
   onNotFound(req, res, url) {
     if (!url.pathname.startsWith('/v1')) return require('../../tools/preview/server').handle(req, res);
     if (url.pathname === '/' || url.pathname === '/v1') {

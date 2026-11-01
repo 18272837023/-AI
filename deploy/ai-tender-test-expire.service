@@ -1,0 +1,6 @@
+[Unit]
+Description=Close the AI tender temporary public test window
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl stop ai-tender-test-tunnel.service ai-tender-external-test.service

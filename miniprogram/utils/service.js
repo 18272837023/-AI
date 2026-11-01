@@ -1,8 +1,12 @@
 'use strict';
 const session = { tender: null, chapter: 0 };
+function accessHeaders() {
+  const token = getApp().globalData.apiAccessToken;
+  return token ? { Authorization: 'Bearer ' + token } : {};
+}
 function request(path, method = 'GET', data) {
   const base = getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310';
-  return new Promise((resolve, reject) => wx.request({ url: base + path, method, data, timeout: 60000,
+  return new Promise((resolve, reject) => wx.request({ url: base + path, method, data, header: accessHeaders(), timeout: 60000,
     success: r => r.statusCode < 300 && r.data.ok ? resolve(r.data.data) : reject(Error(r.data?.error?.message || '服务请求失败')),
     fail: () => reject(Error('无法连接服务，请检查服务是否启动')) }));
 }
@@ -27,7 +31,7 @@ async function refresh(projectId) {
 }
 async function create(name) { const t = await request('/v1/tenders', 'POST', { name }); return refresh(t.id); }
 async function upload(file) {
-  return new Promise((resolve, reject) => wx.uploadFile({ url: (getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310') + path() + '/files', filePath: file.path, name: 'file',
+  return new Promise((resolve, reject) => wx.uploadFile({ url: (getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310') + path() + '/files', filePath: file.path, name: 'file', header: accessHeaders(),
     success: r => { try { const j = JSON.parse(r.data); if (!j.ok) throw Error(j.error.message); resolve(j.data); } catch(e) { reject(e); } }, fail: () => reject(Error('上传失败，请重新选择文件')) }));
 }
 async function stage(name, progress, page, options = {}) {
@@ -100,7 +104,7 @@ function generationChapters(t, job) {
 function listItem(t) {const complete=['done','exported'].includes(t.status)||(t.status==='generated'&&(!t.generation?.total||t.generation.complete));return {...t,title:t.name,shortName:t.name,coverText:t.name.slice(0,1),coverColor:'linear-gradient(135deg,#1B3A6B,#2E5C9E)',time:t.updatedAt?.slice(0,10),statusText:t.status==='generated'&&t.generation?.total&&!t.generation.complete?'部分章节未完成':({created:'待上传',uploaded:'待解析',parsed:'已解析',blueprint:'已拆解',elements:'待生成正文',generated:'正文已生成'})[t.status]||t.status,statusClass:complete?'green':'blue',tagType:complete?'green':'blue',updateText:t.updatedAt?.slice(0,10),progressColor:complete?'#00B42A':'#165DFF',progress:t.generation?.total?Math.round(t.generation.completed/t.generation.total*100):t.stages?.sections?100:0,words:0};}
 function download(draft, options = {}) {
   const query=Object.entries({...options,...(draft?{draft:1}:{})}).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
-  return new Promise((resolve,reject) => wx.downloadFile({url:(getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310')+path()+'/export'+(query?'?'+query:''),success:r=>{
+  return new Promise((resolve,reject) => wx.downloadFile({url:(getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310')+path()+'/export'+(query?'?'+query:''),header:accessHeaders(),success:r=>{
     if(r.statusCode!==200) return reject(Error('导出失败：请重新自检并处理阻断项，或下载测试草稿'));
     wx.openDocument({filePath:r.tempFilePath,fileType:options.format==='pdf'?'pdf':'docx',showMenu:true,success:resolve,fail:()=>reject(Error('文件打开失败'))});
   },fail:()=>reject(Error('下载失败'))}));

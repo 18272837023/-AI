@@ -1,0 +1,19 @@
+[Unit]
+Description=AI tender temporary public HTTPS tunnel
+After=network-online.target nginx.service ai-tender-external-test.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ai-tender-test
+Group=ai-tender-test
+Environment=HOME=/nonexistent
+ExecStart=/usr/bin/cloudflared --no-autoupdate tunnel --protocol http2 --edge-ip-version 4 --url http://127.0.0.1:8081
+Restart=no
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=200M
+
+# A Quick Tunnel gets a different hostname after a restart; do not restart silently.

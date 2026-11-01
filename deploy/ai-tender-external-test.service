@@ -1,0 +1,25 @@
+[Unit]
+Description=AI tender isolated temporary test backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ai-tender-test
+Group=ai-tender-test
+WorkingDirectory=/opt/ai-tender/external-test/server
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=512
+EnvironmentFile=/etc/ai-tender/external-test.env
+ExecStart=/opt/ai-tender/runtime/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ai-tender-external-test
+MemoryMax=900M
+
+# This service is started for a fixed test window, not enabled at boot.
