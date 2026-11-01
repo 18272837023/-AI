@@ -1,8 +1,8 @@
 <view class="page">
   <view class="pad">
     <view class="card">
-      <view class="ph-t">本机测试模式</view>
-      <view class="ph-d">当前版本只在本机运行，没有登录、付费或账户管理。项目数据保存在本机服务端，换设备不会同步。</view>
+      <view class="ph-t">技术标测试版</view>
+      <view class="ph-d">项目数据保存在下方地址对应的服务端。当前版本还没有独立账号和用户数据隔离。</view>
       <view class="ph-row">
         <text class="ph-k">服务地址</text>
         <text class="ph-v">{{api}}</text>
@@ -19,6 +19,11 @@
       <view class="ph-d">解析、施工图、要素表、正文生成与自检都在服务端完成；规则自检不通过时不能导出正式稿。</view>
     </view>
 
+    <view wx:if="{{isTemporaryTest}}" class="card ph-gap">
+      <view class="ph-t">测试访问验证</view>
+      <view class="ph-d">仅清除这台设备记住的访问码，然后返回工作台重新输入。已上传的文件和项目内容会保留。</view>
+      <button class="btn ghost ph-btn" bindtap="resetTestAccess">重新输入测试访问码</button>
+    </view>
     <button class="btn ghost ph-btn" bindtap="goHome">返回工作台</button>
   </view>
 </view>
