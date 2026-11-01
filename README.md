@@ -91,7 +91,7 @@ npm run sample
 node cli.js run samples/示例招标文件.docx
 ```
 
-PDF 导出及相关测试依赖 Windows 中文字体（宋体、黑体、仿宋）。当前代码按 Windows 字体路径加载；其他操作系统部署前需适配字体路径。DOCX 导出不依赖服务端安装这些字体。
+PDF 导出及相关测试需要中文字体。Windows 默认使用系统中的宋体、黑体和仿宋；Linux 支持配置 Fandol 同类字体或自定义字体路径，见 [Ubuntu 部署配置](deploy/README.md)。DOCX 导出不依赖服务端安装这些字体。
 
 ## GitHub 与在线运行
 

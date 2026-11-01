@@ -1,0 +1,27 @@
+[Unit]
+Description=AI tender single-instance backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ai-tender
+Group=ai-tender
+WorkingDirectory=/opt/ai-tender/current/server
+Environment=NODE_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=768
+EnvironmentFile=/etc/ai-tender/server.env
+ExecStart=/opt/ai-tender/runtime/bin/node src/index.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ai-tender
+MemoryMax=1200M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,13 +1,12 @@
 'use strict';
-const PDFDocument=require('pdfkit'),fs=require('node:fs'),path=require('node:path');
+const PDFDocument=require('pdfkit');
+const {resolvePdfFont}=require('./pdf-fonts');
 function buildPdf(t,draft,opts){return new Promise((resolve,reject)=>{
- const fonts={'宋体':['simsun.ttc','SimSun'],'黑体':['simhei.ttf',null],'仿宋':['simfang.ttf',null]},[file,family]=fonts[opts.font];
- const fontPath=path.join(process.env.WINDIR||'C:/Windows','Fonts',file);
- if(!fs.existsSync(fontPath))return reject(Object.assign(Error('缺少中文字体，请安装宋体、黑体或仿宋后导出 PDF'),{statusCode:503}));
+ let font;try{font=resolvePdfFont(opts.font);}catch(e){return reject(e);}
  const doc=new PDFDocument({size:'A4',margins:{top:58,bottom:58,left:58,right:58},bufferPages:true,info:{Title:draft?'测试草稿 · 不用于投标':'技术标',Author:''}}),chunks=[];
  doc.on('data',b=>chunks.push(b));doc.on('error',reject);doc.on('end',()=>resolve(Buffer.concat(chunks)));
  try{
-  doc.registerFont('body',fontPath,family);doc.font('body');
+  doc.registerFont('body',font.file,font.family);doc.font('body');
   const width=doc.page.width-116,lineGap=opts.line==='1.5'?opts.size*.5:Math.max(0,Number(opts.line)-opts.size);
   doc.fontSize(22).text(draft?'测试草稿 · 不用于投标':'技术标',{align:'center'});doc.moveDown(2);
   if(!opts.blindMode)doc.fontSize(16).text(t.name,{align:'center'});
