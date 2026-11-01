@@ -30,6 +30,14 @@ function readSafe(base, rel) {
   try { return fs.readFileSync(p, 'utf8'); } catch (e) { return null; }
 }
 
+function readIcon(rel) {
+  if (path.extname(rel).toLowerCase() === '.svg') return readSafe(ROOT, rel);
+  const file = path.resolve(ROOT, rel);
+  const type = MIME[path.extname(file).toLowerCase()];
+  if (!file.startsWith(ROOT + path.sep) || !type || !type.startsWith('image/')) return null;
+  try { return 'data:' + type + ';base64,' + fs.readFileSync(file).toString('base64'); } catch (_) { return null; }
+}
+
 function handle(req, res) {
   const u = new URL(req.url, 'http://localhost');
   const p = u.pathname;
@@ -49,11 +57,11 @@ function handle(req, res) {
       if (json.tabBar && json.tabBar.list) {
         json.tabBar.list.forEach(function (item) {
           if (item.iconPath) {
-            const svg = readSafe(ROOT, item.iconPath);
+            const svg = readIcon(item.iconPath);
             if (svg) item.iconPath = svg;
           }
           if (item.selectedIconPath) {
-            const svg = readSafe(ROOT, item.selectedIconPath);
+            const svg = readIcon(item.selectedIconPath);
             if (svg) item.selectedIconPath = svg;
           }
         });

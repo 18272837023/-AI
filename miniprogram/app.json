@@ -31,20 +31,20 @@
       {
         "pagePath": "pages/index/index",
         "text": "工作台",
-        "iconPath": "images/tab/home.svg",
-        "selectedIconPath": "images/tab/home-on.svg"
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-on.png"
       },
       {
         "pagePath": "pages/projects/projects",
         "text": "项目",
-        "iconPath": "images/tab/project.svg",
-        "selectedIconPath": "images/tab/project-on.svg"
+        "iconPath": "images/tab/project.png",
+        "selectedIconPath": "images/tab/project-on.png"
       },
       {
         "pagePath": "pages/mine/mine",
         "text": "我的",
-        "iconPath": "images/tab/mine.svg",
-        "selectedIconPath": "images/tab/mine-on.svg"
+        "iconPath": "images/tab/mine.png",
+        "selectedIconPath": "images/tab/mine-on.png"
       }
     ]
   },
