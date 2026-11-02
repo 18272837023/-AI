@@ -4,7 +4,8 @@ const store=require('./lib/store');
 const files=require('./lib/files');
 const {readJson,ok}=require('./lib/http');
 const {detectExt}=require('./parse');
-const CHUNK=256*1024;
+// 微信私有 callContainer 请求限制按编码后包体计算：48KB → Base64 64KB。
+const CHUNK=48*1024;
 function bad(message){throw Object.assign(Error(message),{statusCode:400});}
 function routes(requireTender,assertIdle,persistUpload){return [
  {method:'POST',path:'/v1/tenders/:id/uploads',async handler({req,res,params}){

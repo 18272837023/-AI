@@ -12,6 +12,7 @@ const L = require('./lexicon');
  */
 
 const LEVEL_ORDER = { block: 0, warn: 1, pass: 2 };
+const bodyText=t=>(t.sections||[]).map(s=>Array.isArray(s.blocks)?s.blocks.map(require('../marker-bindings').textOfBlock).join('\n'):s.plain||s.text||'').join('\n');
 
 function item(o) {
   return {
@@ -65,7 +66,7 @@ function checkQualCoverage(tender) {
     })];
   }
 
-  const text = (tender.sections || []).map((s) => s.plain || s.text || '').join('\n');
+  const text = bodyText(tender);
   const flat = normalizeNo(text);
 
   const hard = [];   // 明确要求逐条响应却没写 → 阻断
@@ -134,7 +135,7 @@ function checkElementCoverage(tender) {
   for (const s of tender.sections || []) {
     for (const b of s.blocks || []) {
       for (const e of b.covers || []) {
-        if (b.type!=='h4'&&(b.text || '').trim()) covered.add(s.scoreId + ':' + e);
+        if (b.type!=='h4'&&require('../marker-bindings').textOfBlock(b).trim()) covered.add(s.scoreId + ':' + e);
       }
     }
   }
@@ -169,7 +170,7 @@ function checkElementCoverage(tender) {
 /* ---------------- M19 合规核验 ---------------- */
 
 function checkCompliance(tender) {
-  const text = (tender.sections || []).map((s) => s.plain || s.text || '').join('\n');
+  const text = bodyText(tender);
   const items = [];
 
   const count = (w) => {
@@ -238,7 +239,7 @@ function checkCompliance(tender) {
 /* ---------------- M16 占位符 ---------------- */
 
 function checkPlaceholder(tender) {
-  const text = (tender.sections || []).map((s) => s.plain || s.text || '').join('\n');
+  const text = bodyText(tender);
   const hits = [];
   let m;
   const re = new RegExp(L.PLACEHOLDER_RE.source, 'g');
@@ -265,7 +266,7 @@ function checkPlaceholder(tender) {
 /* ---------------- M20 文风 ---------------- */
 
 function checkStyle(tender) {
-  const text = (tender.sections || []).map((s) => s.plain || s.text || '').join('\n');
+  const text = bodyText(tender);
   const chars = text.replace(/\s/g, '').length || 1;
   let emptyCount = 0;
   const found = [];
@@ -343,7 +344,8 @@ function checkAll(tender) {
   const items = [
     ...((tender.sections || []).length && tender.sections.every(s => (s.blocks || []).some(b => b.type!=='h4'&&(b.text || '').trim())) ? [] : [item({ id: 'C0', level: 'block', cat: 'cover', title: '正文或章节内容为空',fixType:'auto' })]),
     ...(st.pendingGroups?[item({id:'SUP-PENDING',level:'block',cat:'supplement',title:`${st.pendingGroups} 组真实资料待补充`,detail:'项目经历、供应商和人员入场、培训安排请填写；确实无此项可声明缺失。AI 负责方案编写，不能替你编造企业事实。'})]:[]),
-    ...(tender.parse?.scores?.some(s=>!(s.score>0))?[item({id:'C-SCORE',level:'block',cat:'source',title:'评分细则未正确识别',detail:'源文件有评分表，请先重新解析；未识别的分值不能按0分使用。'})]:[]),
+    ...(tender.parse?.scores?.some(s=>!s.custom&&!(s.score>0))?[item({id:'C-SCORE',level:'block',cat:'source',title:'评分细则未正确识别',detail:'源文件有评分表，请先重新解析；未识别的分值不能按0分使用。'})]:[]),
+    ...(tender.parse?.meta?.outlineEdited?[item({id:'C-OUTLINE',level:'warn',cat:'outline',title:'大纲经过人工调整，请核对招标要求',detail:'人工新增、删除或调整章节后，请核对技术评分范围与招标文件的强制目录。',fixType:'manual'})]:[]),
     ...checkQualCoverage(tender),
     ...checkElementCoverage(tender),
     ...checkCompliance(tender),

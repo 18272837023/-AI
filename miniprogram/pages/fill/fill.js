@@ -20,7 +20,8 @@ Page({
  addEntry(e){if(this._busy)return;const gi=this.data.groups.findIndex(g=>g.id===e.currentTarget.dataset.id),g=this.data.groups[gi];if(!g?.repeat||g.entries.length>=g.max)return;const entry={id:g.id+'-new-'+Date.now(),fields:g.entries[0].fields.map(f=>({...f,value:''}))};this.setData({['groups['+gi+'].entries']:g.entries.concat(entry)});this.refresh();},
  removeEntry(e){if(this._busy)return;const gi=this.data.groups.findIndex(g=>g.id===e.currentTarget.dataset.g);if(gi<0)return;const g=this.data.groups[gi];if(g.entries.length<=1)return;this.setData({['groups['+gi+'].entries']:g.entries.filter(x=>x.id!==e.currentTarget.dataset.e)});this.refresh();},
  declare(e){if(this._busy)return;const gi=this.data.groups.findIndex(g=>g.id===e.currentTarget.dataset.id),g=this.data.groups[gi];if(!g?.canDeclare)return;
-  const apply=()=>{this.setData({['groups['+gi+'].declared']:!g.declared});this.refresh();};
+  const previous=g.declared;
+  const apply=()=>api.action(this,async()=>{this.setData({['groups['+gi+'].declared']:!previous});this.refresh();try{const result=await api.request(api.path()+'/supplements','PUT',{revision:this._revision,groups:this.data.groups});this._revision=result.revision;this.setData({groups:result.groups});this.refresh();wx.showToast({title:'声明已保存，自检已更新',icon:'none'});}catch(err){this.setData({['groups['+gi+'].declared']:previous});this.refresh();throw err;}});
   if(g.declared)return apply();
   wx.showModal({title:'声明未提供或不适用？',content:'该项会保留风险提醒；招标文件的强制要求和未填的真实参数不会因此自动通过自检。',success:r=>{if(r.confirm)apply();}});
  },

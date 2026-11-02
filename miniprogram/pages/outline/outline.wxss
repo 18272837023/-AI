@@ -92,10 +92,10 @@
 }
 
 .ol-more {
-  color: #C9CFD9;
-  font-size: 30rpx;
+  color: #165DFF;
+  font-size: 24rpx;
   flex: none;
-  padding-top: 4rpx;
+  padding: 8rpx 4rpx;
 }
 
 .ol.sub {

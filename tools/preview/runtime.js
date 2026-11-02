@@ -789,6 +789,11 @@
 
   // 真机是微信原生弹窗；预览器用页面内的仿微信弹窗，避免 window.confirm 阻塞且样式不符
   function showModalUI(o) {
+    if (o.editable) {
+      var content = window.prompt(o.title || '请输入', o.content || '');
+      if (o.success) o.success({confirm: content !== null, cancel: content === null, content: content || ''});
+      return;
+    }
     if (!dom.modal) {
       var ok = window.confirm((o.title ? o.title + '\n' : '') + (o.content || ''));
       if (o.success) o.success({ confirm: ok, cancel: !ok });
@@ -836,6 +841,8 @@
     showLoading: function (o) { toast((o && o.title) || '加载中'); },
     hideLoading: function () { dom.toast.classList.remove('on'); },
     showModal: function (o) { showModalUI(o || {}); },
+    showActionSheet: function(o) { var choice=window.prompt(o.itemList.map(function(s,i){return (i+1)+'. '+s;}).join('\n'),''); var index=Number(choice)-1;if(choice!==null&&choice!==''&&Number.isInteger(index)&&index>=0&&index<o.itemList.length){if(o.success)o.success({tapIndex:index});}else if(o.fail)o.fail({errMsg:'showActionSheet:fail cancel'}); },
+    pageScrollTo: function(o) { var target=o.selector&&document.querySelector(o.selector);if(target)target.scrollIntoView({behavior:'smooth',block:'start'});if(o.success)o.success({}); },
     navigateTo: function (o) { openPage(normalize(o.url), 'push'); if (o.success) setTimeout(o.success, 50); },
     redirectTo: function (o) { openPage(normalize(o.url), 'replace'); if (o.success) setTimeout(o.success, 50); },
     switchTab: function (o) { openPage(normalize(o.url), 'switch'); if (o.success) setTimeout(o.success, 50); },

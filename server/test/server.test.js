@@ -713,3 +713,58 @@ test('结构整理不猜填缺失单元格，不吞掉错误格式，表格中�
  const {normalizeSections}=require('../src/pipeline/normalize-sections'),{validateGroup}=require('../src/pipeline/validation');assert.throws(()=>normalizeSections({items:[{blocks:[{type:'table',text:'错误表格',rows:[['a','b'],['只有一列']]}]}]},[]),/列数不一致/);
  const data={items:[{scoreId:'10',blocks:[{type:'table',text:'实施清单',covers:['E1'],rows:[['环节','做法'],['检查','〔待确认：检查频次〕']]}]}]};normalizeSections(data,['E1']);assert.match(validateGroup(data,{scoreId:'10',rows:[{elementId:'E1'}]},'blocks'),/检查频次/);
 });
+
+test('真实资料保存同步替换要素、正文及表格；声明无此项清除对应标记但保留强制条款',async()=>{
+ const s=require('../src/supplements'),t=supplementFixture();
+ t.elements[0].rows[3].params='〔待确认：类似项目经历〕';
+ t.sections[0].blocks=[{type:'table',text:'真实资料',covers:['E1','E2','E3','E4'],rows:[['项目','内容'],['经历','〔待确认：类似项目经历〕'],['日期','〔待确认：合同签订日期〕'],['进场','〔待确认：项目经理进场时间〕']]},{type:'p',text:'保留人工说明',covers:[]}];
+ t.sections[0].plain='旧缓存〔待确认：类似项目经历〕';
+ t.parse.qualifications=[{no:'4.1',text:'必须逐条响应4.1条款',resp:'tech'}];
+ let groups=s.getGroups(t),f=key=>groups[0].entries[0].fields.find(x=>x.key===key);
+ f('name').value='真实工程甲';f('type').value='建筑工程';f('signDate').value='2024-06';f('amount').value='120';f('status').value='已完成';groups[1].entries[0].fields.find(x=>x.key==='vendor').value='开工前5日';
+ assert.equal((await putSupplements(t,groups)).status,200);
+ assert.match(t.sections[0].blocks[0].rows[1][1],/真实工程甲/);assert.equal(t.sections[0].blocks[0].rows[2][1],'2024-06');assert.match(t.elements[0].rows[3].params,/真实工程甲/);
+ assert.ok(!t.check.items.some(x=>x.id==='C5'&&x.level==='block'));
+ assert.ok(t.check.items.some(x=>x.id==='C1'&&x.level==='block'),'不得绕过招标强制条款');
+ groups=s.getGroups(t);groups[0].declared=true;assert.equal((await putSupplements(t,groups)).status,200);
+ assert.equal(t.sections[0].blocks[0].rows[1][1],'未提供（已人工确认）');assert.equal(t.sections[0].blocks[0].rows[2][1],'未提供（已人工确认）');
+ assert.ok(!t.check.items.some(x=>x.id==='C5'&&x.level==='block'));assert.ok(t.check.items.some(x=>x.id==='SUP-F1'&&x.level==='warn'));assert.equal(t.sections[0].blocks[1].text,'保留人工说明');
+});
+test('正文专属真实资料可从待确认入口填写，就地更新且拒绝过期版本与伪字段',async()=>{
+ const t=supplementFixture(),facts=require('../src/pending-facts');
+ t.sections[0].blocks.push({type:'table',text:'查勘资料',covers:[],rows:[['内容','实测值'],['供电','〔待确认：现场临时用电容量〕']]});
+ const before=JSON.stringify(t.sections[1]);assert.ok(facts.list(t).some(x=>x.marker==='现场临时用电容量'));assert.ok(!facts.list(t).some(x=>x.marker==='段落数'));
+ await ready;const send=async body=>{const r=await fetch(base+`/v1/tenders/${t.id}/pending-facts`,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)});return {status:r.status,...await r.json()};};
+ const revision=t.revision;
+ assert.equal((await send({revision,values:[{marker:'不存在的事实',value:'x'}]})).status,400);
+ assert.equal((await send({revision,values:[{marker:'现场临时用电容量',value:'250kVA'}]})).status,200);
+ assert.match(t.sections[0].plain,/250kVA/);assert.equal(t.sections[0].blocks.at(-1).rows[1][1],'250kVA');assert.match(t.elements[0].rows[2].params,/250kVA/);assert.equal(JSON.stringify(t.sections[1]),before);
+ assert.ok(!t.check.items.find(x=>x.id==='C5')?.samples.includes('现场临时用电容量'));assert.equal((await send({revision,values:[{marker:'现场临时用电容量',value:'300kVA'}]})).status,409);assert.equal(store.listJobsByTender(t.id).length,0);
+});
+test('章节增删改排序同步关联内容、归档误识别项，新章节只补缺失内容',async()=>{
+ const t=supplementFixture(),untouched=JSON.stringify(t.sections[1].blocks);let revision=t.revision;
+ const edit=body=>request(`/v1/tenders/${t.id}/chapters`,{revision:t.revision,...body});
+ let r=await edit({action:'rename',scoreId:'S2',title:'人工质量管理'});assert.equal(r.status,200);assert.equal(t.blueprint[1].item,'人工质量管理');assert.equal(t.sections[1].title,'人工质量管理');assert.equal(t.elements[1].item,'人工质量管理');
+ assert.equal((await request(`/v1/tenders/${t.id}/chapters`,{revision,action:'remove',scoreId:'S2'})).status,409);
+ assert.equal((await edit({action:'move',scoreId:'S2',index:0})).status,200);assert.equal(t.sections[0].scoreId,'S2');assert.equal(t.parse.scores[0].id,'S2');
+ r=await edit({action:'add',title:'人工补充技术措施'});assert.equal(r.status,200);const added=r.data.scoreId;assert.ok(t.blueprint.some(g=>g.scoreId===added));assert.equal(t.sections.length,2);
+ await request(`/v1/tenders/${t.id}/elements`,{retryFailed:true});for(let i=0;i<200;i++){if(!store.listJobsByTender(t.id).some(j=>j.status==='running'||j.status==='queued'))break;await new Promise(resolve=>setTimeout(resolve,10));}
+ await request(`/v1/tenders/${t.id}/generate`,{retryFailed:true});for(let i=0;i<200;i++){if(!store.listJobsByTender(t.id).some(j=>j.status==='running'||j.status==='queued'))break;await new Promise(resolve=>setTimeout(resolve,10));}
+ assert.ok(t.sections.some(g=>g.scoreId===added));assert.equal(JSON.stringify(t.sections.find(g=>g.scoreId==='S2').blocks),untouched);assert.ok(!t.check?.items.some(x=>x.id==='C-SCORE'&&x.samples?.some(s=>s.includes('人工补充'))));
+ assert.equal((await edit({action:'remove',scoreId:'S1'})).status,200);for(const key of ['blueprint','elements','sections'])assert.ok(!t[key].some(g=>g.scoreId==='S1'));assert.ok(t.parse.excludedScores.some(g=>g.id==='S1'));assert.ok(t.chapterHistory.some(h=>h.removed?.section));
+ await edit({action:'remove',scoreId:added});assert.equal((await edit({action:'remove',scoreId:'S2'})).status,400);assert.equal(t.sections[0].scoreId,'S2');
+});
+
+test('资料齐全或三组均声明无此项，相关阻断确实归零；不会仅清界面计数',async()=>{
+ const supplements=require('../src/supplements');
+ for(const declared of [false,true]){
+  const t=supplementFixture();t.parse.scores.forEach(s=>s.score=s.id==='S1'?10:5);
+  t.sections[0].blocks=[{type:'p',text:'经历〔待确认：类似项目经历〕；人员到场〔待确认：项目经理进场时间〕；培训对象〔待确认：培训对象〕。',covers:['E1','E2','E3','E4']}];
+  t.sections[0].plain=t.sections[0].blocks[0].text;
+  const groups=supplements.getGroups(t);
+  for(const g of groups){g.declared=declared;if(!declared)for(const f of g.entries[0].fields)f.value=f.key==='status'?'已完成':f.key==='amount'?'120':f.key==='signDate'?'2024-06':'已经核实的真实资料';}
+  assert.equal((await putSupplements(t,groups)).status,200);
+  assert.equal(t.check.blocking,0,JSON.stringify(t.check.items.filter(i=>i.level==='block')));assert.equal(t.check.gate.canExport,true);assert.doesNotMatch(t.sections[0].plain,/〔待确认/);
+  const recheck=await request(`/v1/tenders/${t.id}/check`,{});assert.equal(recheck.data.blocking,0);assert.equal(recheck.data.gate.canExport,true);
+ }
+});

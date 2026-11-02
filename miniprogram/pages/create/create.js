@@ -10,8 +10,10 @@ Page({
  prepareFile(file){return api.action(this,async()=>{
   const selection=this._selection=(this._selection||0)+1;this._draftId=null;
   this.setData({files:[{...file,uid:nextUid(),size:fmtSize(file.size),kind:'main',tag:'招标文件正文'}],hasMain:true,nameStatus:'正在上传并识别项目名称…',...(!this._manualName?{projectName:''}:{})});
-  const t=await api.create('');await api.upload(file);
-  if(selection!==this._selection)return;this._draftId=t.id;
+  const t=await api.create('');if(selection!==this._selection)return;this._draftId=t.id;
+  this._mainUploaded=false;try{await api.upload(file);}catch(e){if(selection===this._selection)this.setData({nameStatus:'正文上传未完成，可点击“开始解析”重试'});throw e;}
+  if(selection!==this._selection)return;
+  this._mainUploaded=true;
   try {const result=await api.request(api.path()+'/identify-name','POST',{});if(selection!==this._selection)return;
    if(!this._manualName)this.setData({projectName:result.name||'',nameStatus:result.name?'已从招标文件识别，可手动修改':'暂未识别到名称，可手动填写或在完整解析后确认'});
    else this.setData({nameStatus:'已保留手动填写的名称'});
@@ -37,7 +39,8 @@ Page({
  },
  startParse(){return api.action(this,async()=>{
   if(!this.data.files.length)throw Error('请先选择招标文件');
-  if(this._draftId)await api.refresh(this._draftId);else {const t=await api.create('');await api.upload(this.data.files[0]);this._draftId=t.id;}
+  if(this._draftId)await api.refresh(this._draftId);else {const t=await api.create('');this._draftId=t.id;this._mainUploaded=false;}
+  if(!this._mainUploaded){await api.upload(this.data.files[0]);this._mainUploaded=true;}
   const attachments=this.data.files.filter(f=>f.kind==='attach');
   if(attachments.length){this.setData({nameStatus:'正在上传附件…'});for(const f of attachments)await api.upload(f);}
   if(this._manualName&&this.data.projectName.trim())await api.request(api.path()+'/name','PUT',{name:this.data.projectName.trim(),revision:api.session.tender.revision});

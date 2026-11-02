@@ -66,7 +66,7 @@ function invalidateTender(tenderId, stage) {
   if (start === undefined) throw new Error('未知阶段');
   const patch = {};
   for (const field of fields.slice(start)) patch[field] = null;
-  if (stage === 'upload') { patch.parseCheckpoint=null; patch.supplementValues=[]; patch.supplementReplacements=[]; patch.supplementWarnings=[]; }
+  if (stage === 'upload') { patch.parseCheckpoint=null; patch.supplementValues=[]; patch.supplementReplacements=[]; patch.supplementElementReplacements=[]; patch.supplementWarnings=[]; patch.confirmedFacts=[]; }
   if (start <= 2) patch.blueprintMeta = null;
   if (start <= 3) patch.elementsMeta = null;
   if (start <= 4) patch.generateMeta = null;

@@ -15,18 +15,34 @@
     <view class="hero-stats">
       <view class="hs"><text class="n">{{totalFields}}</text><text class="l">字段</text></view>
       <view class="hs"><text class="n brand">{{filledCount}}</text><text class="l">已填</text></view>
-      <view class="hs"><text class="n">{{pendingCount}}</text><text class="l">待确认</text></view>
+      <view class="hs" bindtap="togglePending"><text class="n">{{pendingCount}}</text><text class="l">待确认 · 点此筛选</text></view>
     </view>
   </view>
 
   <view class="tools" wx:if="{{ready}}">
+    <text class="tool" bindtap="togglePending">{{onlyPending ? '显示全部要素' : '只看待确认'}}</text>
     <text class="tool" bindtap="restore">重新载入已保存内容</text>
     <text class="tool-dot">·</text>
     <text class="tool" bindtap="clearAll">清空重填</text>
   </view>
 
+  <view class="pending-panel" wx:if="{{ready && pendingCount}}">
+    <view class="grp-name">待确认字段 · 点名称定位</view>
+    <text class="pending-link" wx:for="{{pendingLinks}}" wx:key="anchor" data-anchor="{{item.anchor}}" bindtap="locatePending">{{item.label}}</text>
+  </view>
+  <view class="pending-panel" wx:if="{{ready && facts.length}}">
+    <view class="grp-name">正文中的真实资料待确认（{{facts.length}}项）</view>
+    <view class="grp-hint">包括正文和表格内的待确认资料。填入真实值后，点击底部保存，会同步替换对应标记并更新自检。业绩、入场和培训资料也可到待补字段集中填写。</view>
+    <text class="tool" bindtap="goFill">前往待补字段 →</text>
+    <view class="fd pending-field" wx:for="{{facts}}" wx:key="id">
+      <view class="fd-lb">{{item.marker}}</view><view class="grp-hint">所在章节：{{item.chapterText}}</view>
+      <textarea class="fd-in fd-area" auto-height maxlength="6000" value="{{item.value}}" placeholder="请填写真实资料" data-id="{{item.id}}" bindinput="onFactInput" />
+    </view>
+  </view>
+  <view class="note" wx:if="{{ready && onlyPending && !pendingCount && !facts.length}}">当前没有待确认字段，可切换显示全部要素。</view>
+
   <!-- 分组 -->
-  <view class="grp" wx:if="{{ready}}" wx:for="{{groups}}" wx:for-item="grp" wx:key="id">
+  <view class="grp" wx:if="{{ready && (!onlyPending || grp.visiblePendingCount)}}" wx:for="{{groups}}" wx:for-item="grp" wx:key="id">
     <view class="grp-hd">
       <view class="grp-l">
         <text class="grp-el">{{grp.el}}</text>
@@ -49,6 +65,7 @@
         wx:for-item="ent"
         wx:for-index="ei"
         wx:key="id"
+        wx:if="{{!onlyPending || ent.visiblePendingCount}}"
       >
         <view class="ent-hd" wx:if="{{!grp.repeat}}"><text class="ent-no">{{ent.elementId}} · {{ent.name}}</text></view>
         <view class="ent-hd" wx:if="{{grp.repeat}}">
@@ -82,11 +99,12 @@
             </view>
           </view>
 
-          <view class="fd" wx:else>
-            <view class="fd-lb">{{f.label}}</view>
+          <view class="fd {{f.pending ? 'pending-field' : ''}}" id="{{f.anchor}}" wx:elif="{{!onlyPending || f.pending || f.keepVisible}}">
+            <view class="fd-lb">{{f.label}} {{f.pending ? '· 待确认' : ''}}</view>
             <textarea
               wx:if="{{f.value && f.value.length > 16}}"
               class="fd-in fd-area"
+              maxlength="6000"
               auto-height
               value="{{f.value}}"
               placeholder="{{f.ph}}"
@@ -99,6 +117,7 @@
             <input
               wx:else
               class="fd-in"
+              maxlength="6000"
               value="{{f.value}}"
               placeholder="{{f.ph}}"
               placeholder-class="ph"

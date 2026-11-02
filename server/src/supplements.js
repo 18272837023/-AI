@@ -6,7 +6,7 @@ const f = (key,label,ph='',extra={}) => ({key,label,ph,type:'text',value:'',...e
 const TEMPLATES = [
  {id:'F1',name:'项目经历补充',repeat:true,unit:'项目',max:6,canDeclare:true,pattern:/类似项目|项目经历|类似业绩|同类.{0,6}经验/,
   hint:'一个真实合同填一条。时间、金额按合同原文填写；是否符合评分条件请对照本项目招标文件。',
-  fields:[f('type','项目类型','填写真实项目类型'),f('signDate','合同签订时间','按合同填写，如：2024-06'),f('amount','合同金额（万元）','按真实合同填写'),f('status','实施情况','',{type:'chips',options:['已完成','在建','已中标未开工']})]},
+  fields:[f('name','项目名称','填写真实项目名称',{required:false}),f('type','项目类型','填写真实项目类型'),f('signDate','合同签订时间','按合同填写，如：2024-06'),f('amount','合同金额（万元）','按真实合同填写'),f('status','实施情况','',{type:'chips',options:['已完成','在建','已中标未开工']})]},
  {id:'F2',name:'供应商与人员入场时间',repeat:false,unit:'计划',max:1,canDeclare:true,pattern:/进场|到场|人员|劳动力|岗位.*配置|资源配置/,
   hint:'只填三个数：供应商什么时候进场、现场最多多少人、人从哪里来。各岗位的到场细节由 AI 按施工进度安排，不需要你逐个填。',
   fields:[f('vendor','供应商进场时间','如：开工前 7 日'),f('peak','现场作业人数峰值','按实际资源计划填写'),f('source','人员来源','如：自有团队、劳务分包')]},
@@ -17,9 +17,10 @@ const TEMPLATES = [
 const MARKER = /〔待确认[:：]([^〕]+)〕/g;
 function contextRows(t) {
  const rows=(t.blueprint||[]).flatMap(g=>(g.elements||[]).map(e=>{const row=(t.elements||[]).find(x=>x.scoreId===g.scoreId)?.rows?.find(r=>r.elementId===e.id);return {scoreId:g.scoreId,elementId:e.id,chapter:g.item,name:e.name,text:[e.name,e.mustHave,row?.approach,row?.params,row?.owner,row?.frequency].filter(Boolean).join('\n')};}));
- for(const sec of t.sections||[])for(const b of sec.blocks||[])if(/〔待确认/.test(b.text))rows.push({scoreId:sec.scoreId,elementId:b.covers?.[0]||'',chapter:sec.title,name:'正文待确认事实',text:b.text,fromBody:true});
+ for(const sec of t.sections||[])for(const b of sec.blocks||[]){const text=require('./marker-bindings').textOfBlock(b);if(/〔待确认/.test(text))rows.push({scoreId:sec.scoreId,elementId:b.covers?.[0]||'',chapter:sec.title,name:'正文待确认事实',text,fromBody:true});}
  // 用户已经回答的问题仍可回来修改；AI 自行解决的旧底稿问题不重新提问。
- for(const change of t.supplementReplacements||[]){const sec=(t.sections||[]).find(s=>s.scoreId===change.scoreId),block=sec?.blocks.find(b=>b.text===change.after);if(block)rows.push({scoreId:sec.scoreId,elementId:block.covers?.[0]||'',chapter:sec.title,name:'已填写真实资料',text:change.before,fromBody:true});}
+ for(const change of t.supplementReplacements||[]){const sec=(t.sections||[]).find(s=>s.scoreId===change.scoreId),block=sec?.blocks.find(b=>b.text===change.after);if(block)rows.push({scoreId:sec.scoreId,elementId:block.covers?.[0]||'',chapter:sec.title,name:'已填写真实资料',text:[change.before,...(change.beforeRows||[]).flat()].join('\n'),fromBody:true});}
+ for(const change of t.supplementElementReplacements||[])rows.push({scoreId:change.scoreId,elementId:change.elementId,chapter:(t.elements||[]).find(g=>g.scoreId===change.scoreId)?.item||'',text:change.before,fromBody:true});
  return rows;
 }
 function getGroups(t) {
@@ -29,27 +30,21 @@ function getGroups(t) {
   let targets=rows.filter(r=>def.pattern.test(r.text));
   // 三个核心入口是产品固定流程，不能因模型漏抽关键词而消失。
   if(!targets.length){const section=(t.sections||[]).find(s=>/团队|组织|管理|实施/.test(s.title))||(t.sections||[])[0];const fallback=rows.find(r=>/团队|组织|管理|实施/.test(r.chapter))||rows[0];targets=section?[{scoreId:section.scoreId,elementId:'',chapter:section.title}]:fallback?[fallback]:[];}
-  groups.push({...def,pattern:undefined,fields:def.fields.map(field=>({...field,required:field.type!=='label',markers:[]})),targets});
+  groups.push({...def,pattern:undefined,fields:def.fields.map(field=>({...field,required:field.type!=='label'&&field.required!==false,markers:[]})),targets});
  }
  // 待补字段只保留固定字段，不再把正文里的〔待确认〕逐条转成用户问题。
  // 拟投入配置、设备清单、供应商与入场计划、移交界面、「以…为准」这类内容，
  // 投标阶段本来就写不出唯一精确值，归 AI 写实（见 facts.isPlanHedge）；
  // 只有能对到固定字段的真实事实才做绑定，例如人数峰值、进场时间、培训频次。
- for(const r of rows.filter(r=>!t.sections?.length||r.fromBody)){
+ for(const r of rows){
   for(const m of r.text.matchAll(new RegExp(MARKER.source,'g'))){
    const marker=m[1].trim();
-   const known = [
-    ['F2','peak',/高峰人数|人数峰值/],['F2','vendor',/供应商进场时间/],
-    ['F3','freq',/^(?:培训|教育培训).{0,8}(?:频次|学时|时长)(?!.*(?:层级|条目))/],
-    // 各岗位到场时间不再单独提问：统一用「供应商进场时间」这一个值回答，
-    // 避免把入场计划拆成四五条细项让用户逐个填。
-    ['F2','vendor',/(?:项目经理|技术负责人|安全员|特种作业|管理人员|施工人员).{0,4}(?:进场|到场)时间/]
-   ].find(([id,key,re])=>re.test(marker)&&groups.find(g=>g.id===id)?.fields.some(f=>f.key===key));
+   const known=require('./marker-bindings').bindingFor(marker);
    if(!known)continue;
-   const field=groups.find(g=>g.id===known[0]).fields.find(f=>f.key===known[1]);
+   const field=groups.find(g=>g.id===known.groupId).fields.find(f=>f.key===known.key);
    let binding=field.markers.find(b=>b.marker===marker);
-   if(!binding){binding={marker,targets:[]};field.markers.push(binding);}
-   binding.targets.push(r);field.required=true;
+   if(!binding){binding={marker,targets:[],groupValue:!!known.groupValue};field.markers.push(binding);}
+   binding.targets.push(r);if(!known.groupValue)field.required=true;
   }
  }
  return groups.map(def=>{
@@ -91,6 +86,7 @@ function renderGroup(g) {
   if(!Object.keys(v).length)return '';
   if(g.id==='F1'){
    const parts=[];
+   if(v.name)parts.push(v.name);
    if(v.type)parts.push(v.type);
    if(v.signDate)parts.push(`${v.signDate} 签订`);
    if(v.amount)parts.push(`合同金额 ${v.amount} 万元`);
@@ -126,9 +122,8 @@ function renderGroup(g) {
 }
 function applyToSections(t,groups=getGroups(t),fresh=false) {
  const sections=JSON.parse(JSON.stringify(t.sections||[])), warnings=[], replacements=[];
- if(!fresh)for(const change of t.supplementReplacements||[]){const sec=sections.find(s=>s.scoreId===change.scoreId);const block=sec?.blocks.find(b=>!b.supplementGroupId&&b.text===change.after);if(block)block.text=change.before;else if(sec)warnings.push('存在已人工编辑的段落，保留原文，请核对补充信息是否一致');}
- const answered=[];
- for(const g of groups)if(!g.declared)for(const e of g.entries)for(const field of e.fields)if(field.value?.trim()){if(field.marker)answered.push({marker:field.marker,value:field.value.trim(),targets:field.targets});for(const binding of field.markers||[])answered.push({...binding,value:field.value.trim()});}
+ if(!fresh)for(const change of t.supplementReplacements||[]){const sec=sections.find(s=>s.scoreId===change.scoreId);const block=sec?.blocks.find(b=>!b.supplementGroupId&&b.text===change.after&&(!change.afterRows||JSON.stringify(b.rows)===JSON.stringify(change.afterRows)));if(block){block.text=change.before;if(change.beforeRows)block.rows=change.beforeRows;}else if(sec)warnings.push('存在已人工编辑的段落，保留原文，请核对补充信息是否一致');}
+ const answered=require('./marker-bindings').answersOf(groups);
 
  // 每组事实只写进一个主章节：全章重复会让正文像拼贴。
  // 主章节取该组 targets 里第一个在正文中真实存在的 scoreId。
@@ -141,9 +136,10 @@ function applyToSections(t,groups=getGroups(t),fresh=false) {
  for(const sec of sections){
   const manualGroups=new Set();
   sec.blocks=sec.blocks.filter(b=>{if(!b.supplementGroupId)return true;if(b.text===b.supplementValueText)return false;manualGroups.add(b.supplementGroupId);return true;});
-  for(const block of sec.blocks){if(block.supplementGroupId)continue;const before=block.text;
-   block.text=block.text.replace(new RegExp(MARKER.source,'g'),(full,key)=>{const answer=answered.find(a=>a.marker===key.trim()&&a.targets.some(r=>r.scoreId===sec.scoreId));return answer?answer.value:full;});
-   if(before!==block.text)replacements.push({scoreId:sec.scoreId,before,after:block.text});
+  for(const block of sec.blocks){if(block.supplementGroupId)continue;const before=block.text,beforeRows=block.rows?JSON.parse(JSON.stringify(block.rows)):undefined;
+   block.text=require('./marker-bindings').replace(block.text,sec.scoreId,answered);
+   if(block.rows)block.rows=block.rows.map(row=>row.map(cell=>require('./marker-bindings').replace(cell,sec.scoreId,answered)));
+   if(before!==block.text||JSON.stringify(beforeRows)!==JSON.stringify(block.rows))replacements.push({scoreId:sec.scoreId,before,after:block.text,...(beforeRows?{beforeRows,afterRows:block.rows}:{})});
   }
   for(const g of groups){
    if(primaryOf[g.id]!==sec.scoreId)continue;
@@ -159,11 +155,23 @@ function applyToSections(t,groups=getGroups(t),fresh=false) {
 function save(t,body) {
  const values=validateInput(t,body), proposed={...t,supplementValues:values};
  const applied=applyToSections(proposed);
- const patch={supplementValues:values,supplementWarnings:applied.warnings,supplementReplacements:applied.replacements};
+ const elementResult=applyToElements(proposed);
+ const patch={supplementValues:values,supplementWarnings:applied.warnings,supplementReplacements:applied.replacements,supplementElementReplacements:elementResult.replacements};
+ if(t.elements)patch.elements=elementResult.elements;
  if(t.sections)patch.sections=applied.sections;
  const next={...proposed,...patch};if(t.sections)patch.check=require('./rules/check').checkAll(next);
  store.updateTender(t.id,patch);store.flush();
  return {revision:t.revision,groups:getGroups(t),stats:stats(getGroups(t)),check:t.check,warnings:applied.warnings};
+}
+function applyToElements(t,groups=getGroups(t)){
+ const elements=JSON.parse(JSON.stringify(t.elements||[])),replacements=[];
+ for(const old of t.supplementElementReplacements||[]){const row=elements.find(g=>String(g.scoreId)===String(old.scoreId))?.rows.find(r=>r.elementId===old.elementId);if(row?.[old.key]===old.after)row[old.key]=old.before;}
+ const answers=require('./marker-bindings').answersOf(groups);
+ for(const group of elements)for(const row of group.rows)for(const key of ['approach','params','owner','frequency']){
+  const before=row[key];row[key]=require('./marker-bindings').replace(before,group.scoreId,answers);
+  if(before!==row[key])replacements.push({scoreId:group.scoreId,elementId:row.elementId,key,before,after:row[key]});
+ }
+ return {elements,replacements};
 }
 function declarationWarnings(t) {
  return getGroups(t).filter(g=>g.declared).map(g=>({id:'SUP-'+g.id,level:'warn',cat:'supplement',title:`${g.name}已声明未提供或不适用`,detail:'这是用户声明，不代表满足招标要求；原文的强制要求和未清除占位符仍按正常规则检查。',fixType:'manual',count:1,samples:[]}));
@@ -175,4 +183,4 @@ async function trainingDraft(t) {
  const result=await llm.runUnit({name:'培训计划建议',schema,timeoutMs:20000,maxRetries:1,system:'你是技术标编制助手。仅拟定未来培训计划建议，不得编造已完成培训、人员资质或企业已有制度。只输出 JSON。',user:JSON.stringify({task:'按本项目培训要求拟定2—6条培训计划建议，字段subject培训对象/content内容/freq频次学时/check考核方式/fail不合格处置。建议需要用户确认。',project:{...t.parse?.project,name:t.name},requirements:group.targets.map(r=>r.text),chapterContext:(t.sections||[]).filter(s=>/施工|实施|管理/.test(s.title)).slice(0,2).map(s=>s.plain.slice(0,4000))}),fallback:async()=>({items:[{subject:'进场作业人员',content:'项目安全要求与作业交底',freq:'',check:'',fail:''},{subject:'项目管理人员',content:'质量管理与应急处置',freq:'',check:'',fail:''}]})});
  return {items:result.data.items,degraded:result.degraded,notice:'以下是拟实施的计划建议，需核对后保存，不是已开展培训的事实记录。'};
 }
-module.exports={getGroups,stats,save,applyToSections,declarationWarnings,trainingDraft};
+module.exports={getGroups,stats,save,applyToSections,applyToElements,declarationWarnings,trainingDraft};

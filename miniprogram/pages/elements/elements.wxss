@@ -338,6 +338,9 @@
 }
 
 /* 说明 */
+.pending-panel { margin: 24rpx 36rpx; padding: 24rpx; border-radius: 20rpx; background: #fff; }
+.pending-link { display: block; padding: 16rpx 0; color: #165DFF; font-size: 24rpx; border-bottom: 1rpx solid #EAF1FF; }
+.pending-field { padding: 18rpx; border-left: 6rpx solid #FF9F43; background: #FFF8ED; border-radius: 10rpx; }
 .note {
   margin: 26rpx 36rpx 0;
   font-size: 21rpx;

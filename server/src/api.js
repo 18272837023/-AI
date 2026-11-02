@@ -107,6 +107,8 @@ const ext = detectExt(filename);
 }
 
 const routes = [
+  {method:'POST',path:'/v1/tenders/:id/chapters',async handler({req,res,params}){const t=requireTender(params);assertIdle(t.id);ok(res,require('./chapters').change(t,await readJson(req)));}},
+  {method:'PUT',path:'/v1/tenders/:id/pending-facts',async handler({req,res,params}){const t=requireTender(params);assertIdle(t.id);ok(res,require('./pending-facts').save(t,await readJson(req)));}},
   ...require('./cloud-transfers').routes(requireTender,assertIdle,persistUpload),
   {method:'POST',path:'/v1/tenders/:id/rescore',async handler({res,params}){const t=requireTender(params);if(!t.doc?.sections?.length||!t.parse)throw Object.assign(Error('请先完成原件解析'),{statusCode:400});const{job,reused}=startJob(t,'rescore');ok(res,{jobId:job.id,reused});}},
   {method:'POST',path:'/v1/tenders/:id/repair',async handler({req,res,params}){
@@ -271,6 +273,7 @@ const routes = [
         blueprintMeta: t.blueprintMeta,
         elements: t.elements,
         elementsMeta: t.elementsMeta,
+        pendingFacts: require('./pending-facts').list(t),
         sections: t.sections,
         supplements: {stats:require('./supplements').stats(require('./supplements').getGroups(t)),warnings:t.supplementWarnings||[]},
         check: t.check

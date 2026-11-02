@@ -20,20 +20,17 @@ function context(sections) {
 
 function ruleScores(sections) {
   const selected = scoringSections(sections), items = [], seen = new Set();
-  const lines = selected.flatMap(s => ((s.no||'')+(s.title||'')+'\n'+(s.text||'')).split(/\r?\n/).map(text=>({text:text.trim(),s})));
-  let category = '';
+  const lines = require('./scoring-scope').scopedLines(selected);
   for (let i=0;i<lines.length;i++) {
     const {text,s} = lines[i];
     if (!text) continue;
-    if (/^(?:技术部分|技术标|技术方案)[（(\s|]/.test(text)) category='tech';
-    if (/^(?:商务部分|商务分|资信业绩|价格部分|报价部分)[（(\s|：:]/.test(text)) category='other';
-    if (category==='other') continue;
+    if (lines[i].scope==='other') continue;
     let name, score, standard = '';
     const cells = text.split(/\s*\|\s*/);
     // 表格：父类可能纵向合并，只认“名称 | 分值 | 评审标准”的相邻列。
     for (let c=1;c<cells.length;c++) {
       if (!/^(?:\d{1,2}(?:\.\d+)?|100)\s*分?$/.test(cells[c])) continue;
-      if (!/[\u4e00-\u9fff]/.test(cells[c-1]) || /技术部分|商务部分|总分|合计|序号/.test(cells[c-1])) continue;
+      if (!/[\u4e00-\u9fff]/.test(cells[c-1]) || /技术部分|商务部分|综合标|综合部分|总分|合计|序号/.test(cells[c-1])) continue;
       name=cells[c-1];score=Number(cells[c].replace('分',''));standard=cells.slice(c+1).join(' | ');break;
     }
     // 原有 TXT/DOCX 纵向单元格：名称、裸分值、标准可能各占一行。
@@ -46,11 +43,12 @@ function ruleScores(sections) {
     }
     if (!name || !(score>0&&score<=100)) continue;
     name=name.replace(/^[（(]?\d+[)）.、]?\s*/,'').trim();
-    if (/总分|合计|共计|报价|价格|商务|业绩|技术部分|技术标$|本评审项|得分|计分|评分标准|评审标准/.test(name) || name.length<2) continue;
+    if (/总分|合计|共计|报价|价格|商务|综合标|综合部分|业绩|技术部分|技术标$|本评审项|得分|计分|评分标准|评审标准/.test(name) || name.length<2) continue;
     // 续表直到下个清晰的评分行/章节，保留完整阶梯评分原文。
     let end=i+1;
     while (end<lines.length) {
       const next=lines[end].text;
+      if(lines[end].heading)break;
       if (/^第.+章/.test(next) || /合计\s*[|：:]?\s*100/.test(next) || /\|\s*\d+(?:\.\d+)?\s*分?\s*\|/.test(next)) break;
       if (/^[\u4e00-\u9fff][^。；;：:|\d]{1,35}$/.test(next)&&/^\d+(?:\.\d+)?\s*分?$/.test(lines[end+1]?.text||'')) break;
       if (/^.{2,40}?\s+\d+(?:\.\d+)?\s*分[：:]/.test(next)) break;

@@ -15,6 +15,13 @@ const rows=[['技术部分（45分）','总体服务方案','15','方案符合�
  ['', '应急方案','10','人员突发变动、紧急任务、质量事故、信息安全、响应时效，每项完整计2分。'],
  ['', '服务承诺','4','符合实际且可行计4分，完整计3分，缺漏计2分，未针对项目计1分，未提供计0分。']];
 
+test('综合标跨页合并父类排除，技术人员配置保留；模型不能将综合标子项混入',()=>{
+ const sections=[{no:'第四章',title:'评审标准',text:'综合标（30分） | 企业业绩 | 10 | 每项业绩计2分\n | 人员资格 | 20 | 每证书计2分'},
+ {no:'',title:'续表',text:' | 服务评价 | 5 | 每份评价计1分\n技术部分（15分） | 技术实施方案 | 10 | 方案完整计10分\n | 技术人员安排 | 5 | 进度组织完整计5分\n综合部分（5分）\n | 财务状况 | 5 | 财务评分'}];
+ const result=ruleScores(sections);assert.deepEqual(result.items.map(r=>r.item),['技术实施方案','技术人员安排']);assert.equal(validateScores(result,sections),null);assert.doesNotMatch(result.items.at(-1).tierDesc,/财务/);
+ const mixed={items:[{id:'S1',item:'服务评价',score:5,tierDesc:'每份评价计1分'}]};assert.match(validateScores(mixed,sections),/综合|商务|资信/);
+});
+
 test('服务类评分表：裸分值、合并类别及跨页续表抽取五项合计45分，不把0分档次当子项',()=>{
  const sections=[{no:'第四章',title:'评审标准',page:24,text:rows.slice(0,3).map(r=>r.join(' | ')).join('\n')},
  {no:'',title:'续表',page:25,text:'（2）不完整计1分；（3）未针对本项目计0.5分；（4）未提供计0分。\n'+rows.slice(3).map(r=>r.join(' | ')).join('\n')},

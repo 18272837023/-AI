@@ -11,6 +11,7 @@ function validateScores(data, sections=[]) {
  const rows=data.items||[];
  if(!rows.length||rows.some(s=>!Number.isFinite(s.score)||s.score<=0||s.score>100||!s.tierDesc?.trim()))return '必须抽取评分表中的实际子项、正分值和评分标准，不能将评分计算说明当成0分子项';
  if(new Set(rows.map(s=>s.id)).size!==rows.length)return '评分项 ID 重复';
+ const scopeError=require('./scoring-scope').scopeError(rows,scoringSections(sections));if(scopeError)return scopeError;
  if(rows.reduce((n,s)=>n+s.score,0)>100)return '技术评分合计超过100，可能重复计算父项与子项';
  const text=scoringSections(sections).map(s=>s.no+s.title+s.text).join('').replace(/\s/g,'');
  const design=/承包人建议书[：:]([\d.]+)分/.exec(text),plan=/承包人实施方案[：:]([\d.]+)分/.exec(text);

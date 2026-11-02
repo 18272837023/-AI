@@ -1,5 +1,5 @@
 const api = require('../../utils/service.js');
-const cats = { qual: '合格性覆盖', cover: '要素覆盖', compliance: '合规核验', placeholder: '内容完整性', style: '文风检测', supplement: '待补字段', source: '招标解析' };
+const cats = { qual: '合格性覆盖', cover: '要素覆盖', compliance: '合规核验', placeholder: '内容完整性', style: '文风检测', supplement: '待补字段', source: '招标解析',outline:'人工大纲' };
 const MAX_ROUNDS = 3;
 // 可自动修复的「处数」：一条问题可能包含多个待补点（count），按处数才看得出进展
 function autoLoad(check) {
@@ -8,7 +8,8 @@ function autoLoad(check) {
 function remainingHint(check){
   if(check.auto)return `仍有 ${check.auto} 项可由 AI 优化，请按清单重试对应项。`;
   const manual=(check.items||[]).filter(i=>i.level==='block');
-  if(manual.some(i=>i.cat==='supplement'||i.id==='C5'))return '请到待补字段补充真实资料，再重新自检。';
+  if(manual.some(i=>i.id==='C5'))return '请到填写要素表查看待确认资料，补齐后重新自检。';
+  if(manual.some(i=>i.cat==='supplement'))return '请到待补字段补充真实资料，再重新自检。';
   if(manual.length)return '请按清单核对并修改对应内容，再重新自检。';
   return check.warning?`可以导出，仍有 ${check.warning} 项提醒需核对。`:'可以导出了。';
 }
@@ -33,7 +34,7 @@ Page({
   primary(e) {
     const item = this.data.check.items.find(i => i.id === e.currentTarget.dataset.id);
     if (item?.fixType === 'auto') return this.optimize(item.id);
-    wx.navigateTo({ url: item?.cat === 'source' ? '/pages/analysis/analysis' : item?.cat === 'supplement' || item?.id === 'C5' ? '/pages/fill/fill' : '/pages/chapter/chapter' });
+    wx.navigateTo({ url: item?.cat === 'source' ? '/pages/analysis/analysis' : item?.cat === 'outline' ? '/pages/outline/outline' : item?.id === 'C5' ? '/pages/elements/elements?pending=1' : item?.cat === 'supplement' ? '/pages/fill/fill' : '/pages/chapter/chapter' });
   },
   /* 一键优化：跑 repair，若仍有可自动修复项就再来一轮（最多 3 轮），
      每轮都重新拉取自检结果，保证顶部数字和清单跟正文一致。 */

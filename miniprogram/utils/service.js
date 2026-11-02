@@ -104,9 +104,9 @@ function view(t) {
     const row = bp.find(b => b.scoreId === s.id), sec = (t.sections || []).find(s2 => s2.scoreId === s.id);
     const covered = new Set((sec?.blocks || []).filter(b => b.text.trim()).flatMap(b => b.covers));
     const elements = (row?.elements || []).map(e => ({...e, must:e.mustHave, done:covered.has(e.id), statusText:covered.has(e.id)?'已完成':hasBody?'待 AI 补写':'待 AI 生成'}));
-    return {id:s.id, name:s.item, score:s.score, scoreText:s.score>0?s.score+' 分':'分值待重新识别', chapter:'第' + (i+1) + '章', tier:s.tierDesc, source:source(s.evidence), keywords:s.keywords, elements, depend:'mixed', depText:'需核对参数', elementsReady:!!row && elements.length>0, total:elements.length, done:elements.filter(e=>e.done).length, open:i===0, coverageLabel:!row || !elements.length?'待拆解':!hasBody?elements.length+' 条要素 · 待 AI 生成':'已完成 '+elements.filter(e=>e.done).length+'/'+elements.length};
+      return {id:s.id, name:s.item, score:s.score, custom:!!s.custom,scoreText:s.custom?'自定义章节':s.score>0?s.score+' 分':'分值待重新识别', chapter:'第' + (i+1) + '章', tier:s.tierDesc, source:source(s.evidence), keywords:s.keywords, elements, depend:'mixed', depText:'需核对参数', elementsReady:!!row && elements.length>0, total:elements.length, done:elements.filter(e=>e.done).length, open:i===0, coverageLabel:!row || !elements.length?'待拆解':!hasBody?elements.length+' 条要素 · 待 AI 生成':'已完成 '+elements.filter(e=>e.done).length+'/'+elements.length};
   });
-  const outline = scores.map((s,i) => ({...s, no:String(i+1), title:s.name, elDone:s.done, elTotal:s.total, locked:true, subs:s.elements.map(e=>e.name)}));
+  const outline = scores.map((s,i) => ({...s, no:String(i+1), title:s.name, elDone:s.done, elTotal:s.total, locked:false, subs:s.elements.map(e=>e.name)}));
   const elements = scores.reduce((n,s)=>n+s.total,0), done=scores.reduce((n,s)=>n+s.done,0);
   const pendingItems=scores.filter(s=>!s.elementsReady).length;
   const stats = {items:scores.length,elements,done,rate:elements?Math.round(done/elements*100):0,ready:scores.length>0&&pendingItems===0,pendingItems,hasBody,rateLabel:hasBody?(elements?Math.round(done/elements*100):0)+'%':'未生成'};

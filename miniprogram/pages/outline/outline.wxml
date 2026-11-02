@@ -14,23 +14,24 @@
       <text class="mb-tag">{{project.outlineModeText}}</text>
       <text class="mb-d">请核对原文指定的章节与顺序</text>
     </view>
-    <text class="mb-lock">待人工核对</text>
+    <text class="mb-lock">可人工调整</text>
   </view>
 
   <!-- 大纲列表 -->
   <view class="outline">
-    <block wx:for="{{outline}}" wx:key="no">
+    <block wx:for="{{outline}}" wx:key="id">
       <view class="ol">
         <view class="grip">{{item.locked ? '·' : '⋮⋮'}}</view>
         <view class="ol-body">
           <view class="ol-title"><text class="no">{{item.no}}</text>{{item.title}}</view>
           <view class="ol-meta">
             <text class="tag blue" wx:if="{{item.score > 0}}">{{item.score}} 分</text>
-            <text class="tag gray" wx:else>加分项</text>
+            <text class="tag gray" wx:else>{{item.custom ? '自定义章节' : '分值待核对'}}</text>
             <text class="dep {{item.depend}}">{{item.depText}}</text>
             <text class="ol-words">{{item.coverageLabel}}</text>
           </view>
         </view>
+        <view class="ol-more" data-index="{{index}}" bindtap="manage">编辑</view>
         <view class="ol-more" data-index="{{index}}" bindtap="openChapter">›</view>
       </view>
 
@@ -40,9 +41,9 @@
     </block>
   </view>
 
-  <!-- 新增（strict 下禁止） -->
+  <!-- 人工调整后需核对原文目录约束 -->
   <view class="pad" style="margin-top:24rpx">
-    <view class="add-chapter locked" bindtap="addChapter">+ 章节管理（查看当前范围）</view>
+    <view class="add-chapter" bindtap="addChapter">＋ 新增章节</view>
   </view>
 
   <!-- 说明 -->
@@ -50,7 +51,7 @@
     <view class="ai-badge">i</view>
     <view class="ai-text">
       <text class="b">编制提示</text>
-      大纲约束来源：{{project.modeEvidence.src}}。当前按评分项组织章节；严格目录的标题和顺序需要人工复核。
+      大纲约束来源：{{project.modeEvidence.src}}。支持人工增删、改名和调整顺序；严格目录模式下，请核对调整是否符合原文要求。
     </view>
   </view>
 

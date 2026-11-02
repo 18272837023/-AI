@@ -2,9 +2,9 @@
   <view class="pad">
     <view class="card">
       <view class="ph-t">技术标测试版</view>
-      <view class="ph-d">项目数据保存在下方地址对应的服务端。当前版本还没有独立账号和用户数据隔离。</view>
+      <view class="ph-d">{{description}}</view>
       <view class="ph-row">
-        <text class="ph-k">服务地址</text>
+        <text class="ph-k">服务连接</text>
         <text class="ph-v">{{api}}</text>
       </view>
       <view class="ph-row">
