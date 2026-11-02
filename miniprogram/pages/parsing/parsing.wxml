@@ -5,11 +5,11 @@
     <view class="ring" style="background: conic-gradient(#165DFF {{percent}}%, #E9EDF5 0);">
       <view class="ring-inner">
         <view class="ring-num">{{percent}}<text class="pct">%</text></view>
-        <view class="ring-label">解析中</view>
+        <view class="ring-label">{{error ? '解析暂停' : '解析中'}}</view>
       </view>
     </view>
 
-    <view class="parse-title">正在解析招标文件</view>
+    <view class="parse-title">{{error ? '解析未完成，请重试' : '正在解析招标文件'}}</view>
     <view class="parse-desc">{{projectName}}</view>
     <view class="parse-eta">进度来自服务端实际任务</view>
   </view>
@@ -22,7 +22,7 @@
       </view>
       <text class="ptext">{{item.text}}</text>
       <text class="pright">
-        {{item.status === 'done' ? '完成' : (item.status === 'now' ? '进行中' : '等待')}}
+        {{item.status === 'done' ? '完成' : (item.status === 'now' ? '进行中' : (item.status === 'error' ? '需重试' : '等待'))}}
       </text>
     </view>
   </view>

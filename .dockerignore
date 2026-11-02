@@ -1,0 +1,16 @@
+**
+!server/
+!server/package.json
+!server/package-lock.json
+!server/src/
+!server/src/**
+!miniprogram/
+!miniprogram/**
+!tools/
+!tools/preview/
+!tools/preview/**
+!deploy/
+!deploy/fonts/
+!deploy/fonts/**
+!Dockerfile
+!cloudbaserc.json

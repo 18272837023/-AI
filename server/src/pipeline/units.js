@@ -299,7 +299,6 @@ const PROMPTS = {
   },
 
   scores(sections) {
-    const focused=require('./validation').scoringSections(sections);
     return {
       system: SYSTEM_BASE,
       user: [
@@ -311,9 +310,10 @@ const PROMPTS = {
         '- 只抽技术标评分项，商务、报价、业绩分值不要抽',
         '- 严格区分“承包人建议书/实施方案”与“资信业绩部分”。资信业绩下的类似项目业绩、负责人资格、团队人员配备均属于资信业绩，不纳入技术方案。技术子项合计必须等于原文中各技术父项之和',
         '- 读取完整前附表，展开父项下的具体评分子项，不重复计入父项；按原文顺序输出。引用“见前附表”的计算说明不是评分子项，必须回到前附表查找，不能填0分',
+        '- 支持“评审标准”“技术部分”表格：竖线 | 表示单元格边界，裸数字（如 6、10）为分值列，不要求带“分”。合并单元格只在首行有类别；跨页续行归入上一评分项。技术服务方案、履约保障、应急方案、服务承诺也属于技术评分，不只识别施工类标题。',
         '',
         '原文：',
-        focused===sections?docBlock(pickSections(sections, ['评分', '评标', '评审', '分值', '得分', '技术标'], { max: 20 })):focused.map(s=>`【${s.no} ${s.title}｜P${s.page||'未知'}】\n${s.text||''}`).join('\n\n').slice(0,60000)
+        require('./score-source').context(sections)
       ].join('\n')
     };
   },

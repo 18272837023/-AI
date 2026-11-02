@@ -1,7 +1,7 @@
 'use strict';
 // 评分表的相邻小节必须一起读取，不能只按关键词命中独立碎片。
 function scoringSections(sections) {
- const start=sections.findIndex(s=>/^第.+章$/.test(s.no||'')&&/^评标办法/.test(s.title||''));
+ const start=sections.findIndex(s=>/^第.+章$/.test(s.no||'')&&/评标办法|评审(?:办法|标准)|评分(?:办法|标准)/.test(s.title||''));
  if(start<0)return sections;
  let end=sections.findIndex((s,i)=>i>start&&/^第.+章$/.test(s.no||'')&&s.no!==sections[start].no);
  if(end<0)end=sections.length;

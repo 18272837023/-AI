@@ -20,7 +20,7 @@ Page({
  // 附件先留在本地，点「开始解析」时随正文一起上传，误点删除不会在服务端留下孤儿文件。
  chooseAttach(){
   if(this._busy)return;
-  wx.chooseMessageFile({count:5,type:'file',extension:['pdf','docx','txt'],success:r=>{
+  wx.chooseMessageFile({count:5,type:'file',extension:['pdf','docx','txt','xlsx','xls'],success:r=>{
    const add=r.tempFiles.map(f=>({...f,uid:nextUid(),size:fmtSize(f.size),kind:'attach',tag:'附件'}));
    this.setData({files:this.data.files.concat(add)});
   },fail:()=>{}});

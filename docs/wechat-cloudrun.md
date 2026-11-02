@@ -1,0 +1,48 @@
+# 微信云托管部署
+
+环境 `prod-d4gzfuhvd96b0639e`，服务 `express-im06`，AppID `wx40877e410b331ca5`。
+
+## 发布前控制台设置
+
+1. 对象存储权限使用“所有用户不可读写”，文件由后端通过 COS 管理。
+2. **关闭服务的公网访问**，仅允许关联小程序通过微信私有链路调用。代码信任平台注入的 `x-wx-appid` / `x-wx-openid`，不得在公开 HTTP 入口信任可伪造的身份头。健康检查 `/v1/health` 不暴露项目内容。
+3. 云调用添加开放接口 `/_/cos/getauth`，用于临时对象存储凭证，不需要长期 COS 密钥。
+4. 保留公网出口，用于模型调用。测试初期副本最小/最大都设为 **1**，以免后台模型任务因缩容到零而中断；常驻实例会产生平台资源费用。
+5. MySQL 数据库 `ai_tender` 已创建。服务启动会自动创建专用表 `tender_entities`，不改官方 `nodejs_demo`。
+
+## 环境变量
+
+保留模板已有的 `COS_BUCKET`、`COS_REGION`、`MYSQL_ADDRESS`、`MYSQL_PASSWORD`、`MYSQL_USERNAME`，不要将密码或模型密钥提交到 Git。
+
+| 变量 | 值 |
+| --- | --- |
+| MYSQL_DATABASE | ai_tender |
+| WECHAT_APPID | wx40877e410b331ca5 |
+| CLOUD_PRIVATE_ACCESS | 1（确认关闭公网访问后设置） |
+| LLM_MODE | live |
+| LLM_BASE_URL | https://api.deepseek.com/v1 |
+| LLM_MODEL | deepseek-chat |
+| LLM_API_KEY | 从本机 server/.env 复制实际密钥，仅填控制台 |
+| QUEUE_CONCURRENCY | 1 |
+
+Docker 镜像已配置 STORE_DRIVER=mysql、FILE_STORE=cos、HOST=0.0.0.0、PORT=8080。不要带入旧的 TEST_ACCESS_* 临时通道配置。
+
+## 发布表单
+
+- 仓库：`18272837023/-AI`；分支：`main`。
+- 端口：`8080`。
+- 目标目录：仓库根目录（控制台默认留空；若必须填写则用 `.`）。
+- Dockerfile：有；文件名 `Dockerfile`。
+- 灰度发布：关闭。先更新 GitHub，再发布对应提交。
+
+## 行为与校验边界
+
+小程序 `cloud-config.js` 配置环境与服务名，普通请求走 `wx.cloud.callContainer`。文件上传和导出以 256KB 分片经同一链路传递，不需要自有域名、临时通道或在手机上输入访问码。网页预览仍使用原 HTTP 方式。
+
+每个微信用户只能访问自己新建的项目。新环境不会自动导入阿里云历史测试数据。
+
+MySQL 保存项目和任务，COS 保存原件、分片和导出文件。异步任务启动前重新读取数据库；SQL 命名锁限制同时写入，轮询读取不被长任务阻塞，提交完成才回复成功。繁忙期间新的修改请求会提示稍后重试。进程重启会重新调度未完成任务；同一任务在数据库锁内检查完成状态以避免重复执行。重启时未完成的模型调用可能需要再次调用并消耗额度。
+
+对象存储 `ai-tender/chunks/` 为临时上传分片，正常完成后删除；`ai-tender/exports/` 为导出缓存，可配置生命周期清理。原件在 `ai-tender/f_*`，不要对整个 `ai-tender/` 设置短期自动删除。
+
+本地自动化测试不能代替微信环境联调。首次发布后须验证：真实手机建项目/上传 PDF 和 Excel、真实模型解析与生成、人工编辑保存、Word/PDF 下载、服务重新发布后项目和原件仍可读取，以及不同微信账号间项目不可互见。只有这些通过后才能确认云托管迁移完成。

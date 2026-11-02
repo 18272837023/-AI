@@ -12,7 +12,6 @@ const { logger } = require('./lib/util');
  * 再起队列，最后监听端口——否则重启瞬间进来的请求可能读到半加载状态。
  */
 
-store.load();
 queue.configure(config.queue.concurrency);
 
 const HELP = `AI 技术标 · P0 服务端
@@ -43,16 +42,35 @@ const server = createRouter(routes, {
   }
 });
 
-server.listen(config.port, config.host, () => {
+async function start(){
+ await store.load();
+ const cloud=require('./lib/cloud-state');
+ if(cloud.enabled()){
+  if(process.env.CLOUD_PRIVATE_ACCESS!=='1'||!process.env.WECHAT_APPID)throw Error('请关闭公网访问并配置 CLOUD_PRIVATE_ACCESS=1、WECHAT_APPID');
+  await require('./lib/files').credentials();
+  const jobs=await cloud.run(false,()=>Object.values(cloud.state({}).jobs).filter(j=>['queued','running'].includes(j.status)).map(j=>({id:j.id,stage:j.stage})));
+  for(const job of jobs)queue.enqueue({run:()=>require('./pipeline/run').run(job.id,job.stage)});
+  // 重启、短暂数据库故障后继续寻找未结束任务，不能让前端永久轮询 running。
+  setInterval(async()=>{
+   if(queue.size().running||queue.size().pending)return;
+   try{
+    const unfinished=await cloud.run(false,()=>Object.values(cloud.state({}).jobs).filter(j=>['queued','running'].includes(j.status)).map(j=>({id:j.id,stage:j.stage})));
+    for(const job of unfinished)queue.enqueue({run:()=>require('./pipeline/run').run(job.id,job.stage)});
+   }catch(e){logger.error('任务恢复检查失败',e.message);}
+  },30000).unref();
+ }
+ server.listen(config.port, config.host, () => {
   logger.info(`服务已启动 http://${config.host}:${config.port}`);
   logger.info(`模型模式：${config.llm.live ? 'live / ' + config.llm.model : 'mock（规则基线，不调模型）'}`);
   logger.info(`队列并发：${config.queue.concurrency}`);
-});
+ });
+}
+start().catch(e=>{logger.error('启动失败',e.message);process.exit(1);});
 
 function shutdown(signal) {
   logger.info(`收到 ${signal}，落盘后退出`);
   try {
-    store.flush();
+    if(!require('./lib/cloud-state').enabled())store.flush();
   } catch (e) {
     logger.error('落盘失败', e.message);
   }

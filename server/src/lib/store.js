@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const config = require('../config');
+const cloud = require('./cloud-state');
 const { id, nowIso, readJsonSafe, writeJsonAtomic, logger } = require('./util');
 
 /**
@@ -12,14 +13,16 @@ const { id, nowIso, readJsonSafe, writeJsonAtomic, logger } = require('./util');
 
 const DB_FILE = path.join(config.dataDir, 'db.json');
 
-const state = {
+const localState = {
   tenders: {},
   jobs: {}
 };
+const state = new Proxy(localState,{get(target,key){return cloud.state(target)[key];}});
 
 let saveTimer = null;
 
 function load() {
+  if(cloud.enabled())return cloud.init();
   const raw = readJsonSafe(DB_FILE, null);
   if (raw && typeof raw === 'object') {
     Object.assign(state.tenders, raw.tenders || {});
@@ -37,6 +40,7 @@ function load() {
 }
 
 function save() {
+  if(cloud.enabled())return cloud.save();
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
@@ -49,6 +53,7 @@ function save() {
 }
 
 function flush() {
+  if(cloud.enabled())return cloud.flush();
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = null;
   writeJsonAtomic(DB_FILE, state);
@@ -61,7 +66,7 @@ function invalidateTender(tenderId, stage) {
   if (start === undefined) throw new Error('未知阶段');
   const patch = {};
   for (const field of fields.slice(start)) patch[field] = null;
-  if (stage === 'upload') { patch.supplementValues=[]; patch.supplementReplacements=[]; patch.supplementWarnings=[]; }
+  if (stage === 'upload') { patch.parseCheckpoint=null; patch.supplementValues=[]; patch.supplementReplacements=[]; patch.supplementWarnings=[]; }
   if (start <= 2) patch.blueprintMeta = null;
   if (start <= 3) patch.elementsMeta = null;
   if (start <= 4) patch.generateMeta = null;
@@ -72,6 +77,7 @@ function invalidateTender(tenderId, stage) {
 
 function createTender(input) {
   const t = {
+    ...(input?.owner?{owner:input.owner}:{}),
     id: id('tnd'),
     name: (input && input.name) || '未命名项目',
     nameSource: input && input.name && input.name !== '未命名项目' ? 'manual' : 'default',

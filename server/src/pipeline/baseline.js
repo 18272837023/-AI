@@ -144,48 +144,8 @@ function qualifications(sections) {
 
 /* ---------------- M06 评分细则 ---------------- */
 
-const SCORE_LINE = /(.{2,40}?)[\s、:：]*(?:满分|分值|得分)?\s*(\d{1,3}(?:\.\d)?)\s*分/;
-
-/** 单项评分上限 20 分（总分行如"总分 100 分"应被排除） */
-const MAX_ITEM_SCORE = 20;
-/** 这些词出现时说明是总述行而不是评分项 */
-const SUM_WORDS = /总分|合计|共计|满分\s*\d{2,3}\s*分.*技术|总分\s*\d{2,3}/;
-
 function scores(sections) {
-  const pool = sections.filter((s) => /评分|评标|评审|分值|打分/.test(s.title + s.text.slice(0, 200)));
-  const items = [];
-  const seen = new Set();
-  let seq = 0;
-
-  for (const s of pool) {
-    for (const line of toLines(s.text)) {
-      if (/报价|价格分|商务分|业绩分/.test(line) && !/技术/.test(line)) continue;
-      if (SUM_WORDS.test(line)) continue;
-      const m = SCORE_LINE.exec(line);
-      if (!m) continue;
-      const scoreVal = Number(m[2]);
-      if (scoreVal > MAX_ITEM_SCORE) continue;
-      const item = m[1].replace(/^[（(]?\d+[)）.、]?\s*/, '').replace(/[：:]+$/, '').trim();
-      if (item.length < 2) continue;
-      const key = item.slice(0, 16);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      seq += 1;
-      items.push({
-        id: 'S' + seq,
-        item,
-        score: Number(m[2]),
-        tierDesc: truncate(line, 160),
-        keywords: item.split(/[与和及、\/]/).filter((x) => x.length >= 2).slice(0, 5),
-        confidence: 'low',
-        evidence: { section: s.no || s.title, page: s.page, quote: truncate(line, 80) }
-      });
-      if (items.length >= 14) break;
-    }
-    if (items.length >= 14) break;
-  }
-
-  return { items };
+  return require('./score-source').ruleScores(sections);
 }
 
 /* ---------------- M07 大纲模式 ---------------- */

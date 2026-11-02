@@ -70,6 +70,57 @@ test('规则基线同样需要通过 Schema 校验', async () => {
   }, fallback: async () => ({}) }), /结构不合格/);
 });
 
+test('云传输分片上传校验完整性、完成重试不重复文件，分片导出还原真实DOCX',async()=>{
+ const id=(await request('/v1/tenders',{})).data.id;
+ const sample=fs.readFileSync(path.join(__dirname,'../samples/示例招标文件.txt'));
+ const bytes=Buffer.concat([sample,Buffer.alloc(280000,32)]);
+ const s=(await request(`/v1/tenders/${id}/uploads`,{name:'cloud.txt',size:bytes.length})).data;
+ assert.equal((await request(`/v1/tenders/${id}/uploads/${s.uploadId}/complete`,{})).status,400);
+ for(let at=0,index=0;at<bytes.length;at+=s.chunkSize,index++)assert.equal((await request(`/v1/tenders/${id}/uploads/${s.uploadId}/parts`,{index,base64:bytes.subarray(at,at+s.chunkSize).toString('base64')})).status,200);
+ for(let i=0;i<2;i++)assert.equal((await request(`/v1/tenders/${id}/uploads/${s.uploadId}/complete`,{})).status,200);
+ assert.equal(store.getTender(id).files.length,1);
+ const original=await require('../src/lib/files').get(store.getTender(id).files[0].storedName);assert.deepEqual(original,bytes);
+ for(const stageName of ['parse','blueprint','elements','generate'])await stage(id,stageName);
+ const exported=await request(`/v1/tenders/${id}/export?draft=1&cloud=1`);assert.equal(exported.status,200);
+ const chunks=[];for(let i=0;i<exported.data.parts;i++){const part=await request(`/v1/tenders/${id}/export-parts?downloadId=${exported.data.downloadId}&index=${i}`);chunks.push(Buffer.from(part.data.base64,'base64'));}
+ const docx=Buffer.concat(chunks);assert.equal(docx.length,exported.data.size);assert.equal(docx.subarray(0,2).toString(),'PK');
+});
+
+test('Excel 清单须作为附件，上传后真正进入解析和后续写作上下文',async()=>{
+ const XLSX=require('xlsx'),book=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(book,XLSX.utils.aoa_to_sheet([['项目名称','单位','工程量'],['混凝土基础','m³',123.45]]),'土建工程量');
+ const data=XLSX.write(book,{type:'buffer',bookType:'xlsx'});
+ const id=(await request('/v1/tenders',{})).data.id;
+ assert.equal((await upload(id,data,'boq.xlsx')).status,400);
+ await upload(id,fs.readFileSync(path.join(__dirname,'../samples/示例招标文件.txt')));
+ assert.equal((await upload(id,data,'boq.xlsx')).status,200);
+ await stage(id,'parse');
+ const t=store.getTender(id);
+ assert.ok(t.parse.attachments.some(a=>a.name==='boq.xlsx'&&a.used));
+ const source=require('../src/pipeline/attachment-context').attachmentContext(t.doc.sections,'施工方案');
+ assert.match(source,/混凝土基础.*123.45/);
+});
+
+test('评分抽取失败后重试复用已完成项目/资格，新增附件使断点失效',async()=>{
+ const id=(await request('/v1/tenders',{})).data.id;
+ await upload(id,fs.readFileSync(path.join(__dirname,'../samples/示例招标文件.txt')));
+ const original=llm.runUnit,calls=[];let failed=false;
+ try {
+  llm.runUnit=async spec=>{calls.push(spec.name);if(spec.name==='M06 评分细则'&&!failed){failed=true;throw Error('模拟评分表抽取失败');}return original(spec);};
+  const first=await request(`/v1/tenders/${id}/parse`,{});
+  for(let i=0;i<200;i++){const j=(await request('/v1/jobs/'+first.data.jobId)).data;if(j.status==='failed')break;await new Promise(r=>setTimeout(r,10));}
+  assert.ok(store.getTender(id).parseCheckpoint.qualifications);
+  await stage(id,'parse');
+  assert.equal(calls.filter(n=>n==='M04 项目要素').length,1);
+  assert.equal(calls.filter(n=>n==='M05 合格性条款').length,1);
+  assert.equal(calls.filter(n=>n==='M06 评分细则').length,2);
+  assert.equal(store.getTender(id).parseCheckpoint,null);
+  await upload(id,Buffer.from('技术要求\n'+'新附件技术要求，须逐项核对。'.repeat(25)),'new.txt');
+  await stage(id,'parse');
+  assert.equal(calls.filter(n=>n==='M04 项目要素').length,2);
+ }finally{llm.runUnit=original;}
+});
+
 test('HTTP 全链、附件并入解析及重跑清理', async () => {
   const id = (await request('/v1/tenders', {})).data.id;
   const sample = fs.readFileSync(path.join(__dirname, '../samples/示例招标文件.txt'), 'utf8');

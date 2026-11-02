@@ -42,7 +42,8 @@ function startJob(tender, stage, options) {
 
 function requireTender(params) {
   const t = store.getTender(params.id);
-  if (!t) throw Object.assign(new Error('项目不存在：' + params.id), { statusCode: 404 });
+  const cloud=require('./lib/cloud-state');
+  if (!t || cloud.enabled() && t.owner!==cloud.owner()) throw Object.assign(new Error('项目不存在：' + params.id), { statusCode: 404 });
   return t;
 }
 
@@ -70,7 +71,43 @@ function brief(t) {
   };
 }
 
+async function persistUpload(t, filename, data) {
+const ext = detectExt(filename);
+      if (!ext) {
+        throw Object.assign(new Error('支持 PDF / DOCX / TXT；工程量清单附件支持 XLSX / XLS'), { statusCode: 415 });
+      }
+      if (!t.files.length && ['xlsx','xls'].includes(ext)) throw Object.assign(Error('请先上传 PDF / DOCX / TXT 招标文件正文，再通过“上传附件”添加 Excel 工程量清单'), {statusCode:400});
+
+      assertIdle(t.id); // 读取上传请求期间可能启动了任务
+      ensureDir(config.uploadDir);
+      const storedName = id('f') + path.extname(filename).toLowerCase();
+      await require('./lib/files').put(storedName, data);
+
+      const file = {
+        id: id('file'),
+        name: filename,
+        storedName,
+        ext,
+        size: data.length,
+        uploadedAt: new Date().toISOString()
+      };
+
+      const files = t.files.concat(file);
+      const patch = { files, status: 'uploaded' };
+      // 只有第一份文件（招标文件正文）才用于命名；后补的附件不能把项目名改掉。
+      if (!t.files.length && t.nameSource !== 'manual' && (t.nameSource || t.name === '未命名项目')) {
+        patch.name = filename.replace(/\.[^.]+$/, '');
+        patch.nameSource = 'file';
+      }
+      store.invalidateTender(t.id, 'upload');
+      store.updateTender(t.id, patch);
+
+      logger.info(`上传 ${filename}（${(data.length / 1024).toFixed(0)}KB）→ ${storedName}`);
+      return { file: { id: file.id, name: file.name, size: file.size, ext: file.ext } };
+}
+
 const routes = [
+  ...require('./cloud-transfers').routes(requireTender,assertIdle,persistUpload),
   {method:'POST',path:'/v1/tenders/:id/rescore',async handler({res,params}){const t=requireTender(params);if(!t.doc?.sections?.length||!t.parse)throw Object.assign(Error('请先完成原件解析'),{statusCode:400});const{job,reused}=startJob(t,'rescore');ok(res,{jobId:job.id,reused});}},
   {method:'POST',path:'/v1/tenders/:id/repair',async handler({req,res,params}){
     const body=await readJson(req),t=requireTender(params);
@@ -110,7 +147,7 @@ const routes = [
       const t = requireTender(params); assertIdle(t.id);
       const file = t.files[0];
       if (!file) throw Object.assign(new Error('请先上传文件'), {statusCode:400});
-      const doc = await parseFile(fs.readFileSync(path.join(config.uploadDir,file.storedName)),file.name);
+      const doc = await parseFile(await require('./lib/files').get(file.storedName),file.name);
       const result = extractName(doc);
       assertIdle(t.id);
       if (t.files[0].id !== file.id) throw Object.assign(new Error('文件已变化，请重新识别'), {statusCode:409});
@@ -161,6 +198,7 @@ const routes = [
       const opts=require('./export-options').exportOptions(query);
       const format=query.get('format')||'word';if(!['word','pdf'].includes(format))throw Object.assign(Error('导出格式无效'),{statusCode:400});
       const data = format==='pdf'?await require('./export-pdf').buildPdf(snapshot,draft,opts):await require('./export').buildDocx(snapshot, draft,opts);
+      if(query.get('cloud')==='1')return ok(res,await require('./cloud-transfers').exportFile(t,data,format==='pdf'?'pdf':'docx'));
       res.writeHead(200, {
         'content-type': format==='pdf'?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'content-disposition': `attachment; filename="${draft ? 'draft' : 'technical-bid'}.${format==='pdf'?'pdf':'docx'}"`,
@@ -192,7 +230,7 @@ const routes = [
       if (body.name !== undefined && (typeof body.name !== 'string' || body.name.length > 200)) {
         throw Object.assign(new Error('项目名称应为不超过 200 字的文本'), { statusCode: 400 });
       }
-      const t = store.createTender({ name: body.name && body.name.trim() || '未命名项目' });
+      const t = store.createTender({ name: body.name && body.name.trim() || '未命名项目',owner:require('./lib/cloud-state').owner() });
       logger.info(`新建项目 ${t.id}`);
       ok(res, brief(t));
     }
@@ -202,7 +240,8 @@ const routes = [
     method: 'GET',
     path: '/v1/tenders',
     async handler({ res }) {
-      ok(res, store.listTenders().map(brief));
+      const cloud=require('./lib/cloud-state');
+      ok(res, store.listTenders().filter(t=>!cloud.enabled()||t.owner===cloud.owner()).map(brief));
     }
   },
 
@@ -271,37 +310,7 @@ const routes = [
       if (!filename) throw Object.assign(new Error('缺少文件名（header x-filename 或 multipart filename）'), { statusCode: 400 });
       if (!data || !data.length) throw Object.assign(new Error('文件内容为空'), { statusCode: 400 });
 
-      const ext = detectExt(filename);
-      if (!ext) {
-        throw Object.assign(new Error('只支持 PDF / DOCX / TXT'), { statusCode: 415 });
-      }
-
-      assertIdle(t.id); // 读取上传请求期间可能启动了任务
-      ensureDir(config.uploadDir);
-      const storedName = id('f') + path.extname(filename).toLowerCase();
-      fs.writeFileSync(path.join(config.uploadDir, storedName), data);
-
-      const file = {
-        id: id('file'),
-        name: filename,
-        storedName,
-        ext,
-        size: data.length,
-        uploadedAt: new Date().toISOString()
-      };
-
-      const files = t.files.concat(file);
-      const patch = { files, status: 'uploaded' };
-      // 只有第一份文件（招标文件正文）才用于命名；后补的附件不能把项目名改掉。
-      if (!t.files.length && t.nameSource !== 'manual' && (t.nameSource || t.name === '未命名项目')) {
-        patch.name = filename.replace(/\.[^.]+$/, '');
-        patch.nameSource = 'file';
-      }
-      store.invalidateTender(t.id, 'upload');
-      store.updateTender(t.id, patch);
-
-      logger.info(`上传 ${filename}（${(data.length / 1024).toFixed(0)}KB）→ ${storedName}`);
-      ok(res, { file: { id: file.id, name: file.name, size: file.size, ext: file.ext } });
+      ok(res, await persistUpload(t, filename, data));
     }
   },
 
@@ -372,6 +381,7 @@ const routes = [
     async handler({ res, params }) {
       const j = store.getJob(params.jobId);
       if (!j) throw Object.assign(new Error('任务不存在'), { statusCode: 404 });
+      requireTender({id:j.tenderId});
       ok(res, j);
     }
   },
@@ -386,5 +396,6 @@ const routes = [
   }
 ];
 
+for(const route of routes){const handler=route.handler;route.handler=args=>require('./cloud-request').handle(route,args,handler);}
 module.exports = { routes };
 function sameScore(a,b){return String(a)===String(b);}

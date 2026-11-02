@@ -130,6 +130,9 @@
   color: var(--brand);
 }
 
+.pitem.error, .pitem.error .pright { color: #F53F3F; }
+.pitem.error .dot { color: #F53F3F; background: #FFF0F0; }
+
 .parse-tip {
   text-align: center;
   font-size: 22rpx;

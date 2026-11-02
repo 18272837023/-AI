@@ -103,7 +103,7 @@ async function runParse(jobId, tender) {
   if (!file) throw Object.assign(new Error('这个项目还没有上传招标文件'), { statusCode: 400 });
 
   step(jobId, 1, '读取并归一化文档（M01）');
-  const buf = fs.readFileSync(path.join(config.uploadDir, file.storedName));
+  const buf = await require('../lib/files').get(file.storedName);
   const doc = await parseFile(buf, file.name);
 
   step(jobId, 2, '构建章节树（M02）');
@@ -113,12 +113,11 @@ async function runParse(jobId, tender) {
   const attachments = [];
   let attachChars = 0;
   for (const att of attachmentFiles) {
-    if (attachChars > 80000) { attachments.push({ id: att.id, name: att.name, used: false }); continue; }
     try {
-      const adoc = await parseFile(fs.readFileSync(path.join(config.uploadDir, att.storedName)), att.name);
+      const adoc = await parseFile(await require('../lib/files').get(att.storedName), att.name);
       const asec = buildSections(adoc);
       for (const s of asec) {
-        if (attachChars + (s.charCount || 0) > 80000) break;
+        if (attachChars + (s.charCount || 0) > 800000) throw Error('附件文本总量超过处理范围，请按专业拆分工程量清单后重试');
         attachChars += s.charCount || 0;
         // 附件章节的 id 与正文重名（都从 s001 起），加前缀避免下游按 id 取错
         sections.push({
@@ -131,12 +130,24 @@ async function runParse(jobId, tender) {
       }
       attachments.push({ id: att.id, name: att.name, used: true, sections: asec.length });
     } catch (e) {
-      attachments.push({ id: att.id, name: att.name, used: false, error: e.message });
+      // 用户明确上传的清单不能悄悄丢弃，再以“附件已使用”继续生成。
+      throw Object.assign(Error(`附件“${att.name}”解析失败：${e.message}`), {statusCode:422});
     }
   }
 
+  const sourceHash = require('node:crypto').createHash('sha256').update(JSON.stringify(sections)).digest('hex');
+  const checkpoint = tender.parseCheckpoint?.sourceHash === sourceHash ? {...tender.parseCheckpoint} : {sourceHash};
+  async function parsedUnit(key, spec) {
+    if (checkpoint[key]) return checkpoint[key];
+    const result = await llm.runUnit(spec);
+    checkpoint[key] = result;
+    store.updateTender(tender.id, {parseCheckpoint:{...checkpoint}});
+    store.flush();
+    return result;
+  }
+
   step(jobId, 3, '抽取项目要素（M04）');
-  const info = await llm.runUnit({
+  const info = await parsedUnit('project', {
     name: 'M04 项目要素',
     ...PROMPTS.projectInfo(sections),
     schema: SCHEMAS.projectInfo,
@@ -147,7 +158,7 @@ async function runParse(jobId, tender) {
   analysis.finishProject(info.data,sections);
 
   step(jobId, 4, '审查合格性条款（M05）');
-  const quals = await llm.runUnit({
+  const quals = await parsedUnit('qualifications', {
     name: 'M05 合格性条款',
     ...PROMPTS.qualifications(sections),
     schema: SCHEMAS.qualifications,
@@ -156,7 +167,7 @@ async function runParse(jobId, tender) {
   });
 
   step(jobId, 5, '抽取技术标评分细则（M06）');
-  const scores = await llm.runUnit({
+  const scores = await parsedUnit('scores', {
     name: 'M06 评分细则',
     ...PROMPTS.scores(sections),
     schema: SCHEMAS.scores,
@@ -172,7 +183,7 @@ async function runParse(jobId, tender) {
   }
 
   step(jobId, 6, '判定大纲模式（M07）');
-  const outline = await llm.runUnit({
+  const outline = await parsedUnit('outline', {
     name: 'M07 大纲模式',
     ...PROMPTS.outlineMode(sections),
     schema: SCHEMAS.outlineMode,
@@ -190,6 +201,7 @@ async function runParse(jobId, tender) {
   store.updateTender(tender.id, {
     ...automaticNamePatch(tender, info.data.name),
     status: 'parsed',
+    parseCheckpoint: null,
     doc: {
       ext: doc.ext,
       pageKnown: doc.pageKnown,
@@ -300,7 +312,7 @@ async function runElements(jobId, tender) {
     try {
       const res = await llm.runUnit({
         name: 'M13 要素表',
-        ...PROMPTS.elementTable(row, { project: tender.parse.project, qualifications: tender.parse.qualifications,source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[row.item,'技术要求','招标范围','建设规模'],{max:10}),18000) }),
+        ...PROMPTS.elementTable(row, { project: tender.parse.project, qualifications: tender.parse.qualifications,billOfQuantities:require('./attachment-context').attachmentContext(tender.doc?.sections||[],row.item),source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[row.item,'技术要求','招标范围','建设规模'],{max:10}),18000) }),
         schema: SCHEMAS.elementTable,
         normalize: (data) => sanitizeElementIds(data, row.elements.map((e) => e.id)),
         validateData:data=>validateGroup(data,row,'rows'),
@@ -362,7 +374,7 @@ async function runGenerate(jobId, tender) {
     try {
       const res = await llm.runUnit({
         name: 'M14 正文',
-        ...PROMPTS.sections(group, { project: tender.parse.project, qualifications: tender.parse.qualifications, outline: tender.parse.outline,source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[group.item,'技术要求','招标范围','建设规模'],{max:10}),18000) }),
+        ...PROMPTS.sections(group, { project: tender.parse.project, qualifications: tender.parse.qualifications, outline: tender.parse.outline,billOfQuantities:require('./attachment-context').attachmentContext(tender.doc?.sections||[],group.item),source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[group.item,'技术要求','招标范围','建设规模'],{max:10}),18000) }),
         schema: SCHEMAS.sections,
         prepare:data=>require('./normalize-sections').normalizeSections(data,group.rows.map(r=>r.elementId)),
         normalize: (data) => sanitizeCovers(data, group.rows.map((r) => r.elementId)),
@@ -423,9 +435,15 @@ async function runGenerate(jobId, tender) {
 
 /* ---------------- 入口 ---------------- */
 
-async function run(jobId, stage) {
+async function run(jobId, stage, inCloudContext=false) {
+  const cloud=require('../lib/cloud-state');
+  if(cloud.enabled()&&!inCloudContext){
+    try{return await cloud.run(true,()=>run(jobId,stage,true),{wait:1});}
+    catch(e){if(e.statusCode===409){setTimeout(()=>run(jobId,stage).catch(error=>logger.error('任务恢复失败',error.message)),1500);return;}throw e;}
+  }
   const job = store.getJob(jobId);
   if (!job) return;
+  if(cloud.enabled()&&['done','failed'].includes(job.status))return;
   const tender = store.getTender(job.tenderId);
   if (!tender) {
     store.updateJob(jobId, { status: 'failed', error: '项目不存在', finishedAt: new Date().toISOString() });
@@ -451,6 +469,7 @@ async function run(jobId, stage) {
       result: result || null,
       finishedAt: new Date().toISOString()
     });
+    await store.flush();
   } catch (e) {
     logger.error(`job ${jobId} 失败：${e.message}`);
     store.pushJobLog(jobId, 'error', e.message);

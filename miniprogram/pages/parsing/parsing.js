@@ -11,7 +11,7 @@ Page({
  },
  onUnload(){this._unloaded=true;if(this._timer){clearInterval(this._timer);this._timer=null;}},
  tick(){
-  if(this._unloaded)return;
+  if(this._unloaded||this.data.error)return;
   const cap=this._done?100:Math.min(99,this._target+12);
   if(this._shown<cap){
    const gap=cap-this._shown;
@@ -26,11 +26,13 @@ Page({
    wx.redirectTo({url:'/pages/analysis/analysis'});
   }
  },
- start(){api.action(this,async()=>{
-  const t=await api.refresh();this.setData({projectName:t.name,error:''});
+ start(){return api.action(this,async()=>{
+  this._shown=0;this._target=0;this._done=false;this._redirected=false;
+  this.setData({percent:0,error:'',steps:steps.map(text=>({text,status:'wait'}))});
   try{
+   const t=await api.refresh();this.setData({projectName:t.name});
    await api.ensure('parse','parse',j=>{this._target=Math.max(this._target,j.progress||0);this.setData({steps:steps.map((text,i)=>({text,status:i<j.step-1?'done':i===j.step-1?'now':'wait'}))});},this);
    if(!this._unloaded){this._done=true;this._target=100;this.setData({steps:steps.map(text=>({text,status:'done'}))});}
-  }catch(e){this.setData({error:e.message});throw e;}
+  }catch(e){this.setData({error:e.message,steps:this.data.steps.map(s=>s.status==='now'?{...s,status:'error'}:s)});throw e;}
  });}
 });
