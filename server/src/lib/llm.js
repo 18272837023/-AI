@@ -97,8 +97,8 @@ async function runUnit(spec) {
   const { name, system, user, schema, fallback, temperature } = spec;
 
   const validate = compile(schema);
-  async function checkedFallback() {
-    const data = await fallback();
+  async function checkedFallback(reason) {
+    const data = await fallback({reason});
     if(spec.prepare)spec.prepare(data);
     if (!validate(data)) throw new Error(`[${name}] 规则基线结构不合格：${ajv.errorsText(validate.errors)}`);
     const semanticError = spec.validateData && spec.validateData(data);
@@ -158,7 +158,7 @@ async function runUnit(spec) {
   }
 
   logger.error(`[${name}] 模型输出连续不合格，退回规则基线：${lastError}`);
-  const data = await checkedFallback();
+  const data = await checkedFallback(lastError);
   return { data, degraded: true, reason: 'schema_failed: ' + lastError, usage: totalUsage, ms: totalMs };
 }
 

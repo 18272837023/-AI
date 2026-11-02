@@ -149,10 +149,11 @@ async function runParse(jobId, tender) {
   step(jobId, 3, '抽取项目要素（M04）');
   const info = await parsedUnit('project', {
     name: 'M04 项目要素',
-    ...PROMPTS.projectInfo(sections),
+    ...PROMPTS.projectInfo(sections,doc.pages),
     schema: SCHEMAS.projectInfo,
-    validateData:data=>llm.isLive()?analysis.validateProject(data,sections):null,
-    fallback: async () => {if(llm.isLive())throw Error('项目要素抽取未通过原文校验，请重新解析；未用空白结果替代');return base.projectInfo(sections);}
+    normalize:data=>analysis.normalizeProject(data,sections,doc.pages),
+    validateData:data=>llm.isLive()?analysis.validateProject(data,sections,doc.pages):null,
+    fallback: async ({reason}={}) => {if(llm.isLive())throw Error('项目要素抽取未完成；'+(reason?'具体原因：'+String(reason).replace(/sk-[A-Za-z0-9_-]+/g,'[密钥已隐藏]').slice(0,350)+'。':'')+'请重试解析，已完成的结果会保留');return base.projectInfo(sections);}
   });
   const identified=extractName(doc);if(identified.name){info.data.name=identified.name;info.data.fieldEvidence={...info.data.fieldEvidence,name:{section:'项目名称',...identified.evidence}};}
   analysis.finishProject(info.data,sections);

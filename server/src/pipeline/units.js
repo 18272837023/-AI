@@ -262,7 +262,7 @@ function pickSections(sections, keywords, opts) {
 }
 
 const PROMPTS = {
-  projectInfo(sections) {
+  projectInfo(sections,pages) {
     return {
       system: SYSTEM_BASE,
       user: [
@@ -272,10 +272,12 @@ const PROMPTS = {
         '- purchaser 实际招标人（非代理机构）；budget 项目预算或合同估算价（保留金额、单位和性质）；deadline 投标文件递交截止时间（不是下载截止）',
         '- bidNo 本标段完整招标编号（优先公告而非封面父项目编号）；evalMethod 评标办法；pageLimit 技术标页数上限；blind 明标/暗标及格式要求',
         '- 每个非空字段在 fieldEvidence 中分别给原文连续引用、所在小节与页码。上下相邻段落及标题也含字段值，不能只看正文。未找到才留空，不得以“待核对原文”代替抽取',
+        '- P 后数字是 PDF 实际页序号，引用时使用该页序号，不使用页脚印刷页码。封面可能只有父项目编号，完整标段招标编号优先采用公告。目录点引线条目不作为项目事实或证据。',
+        '- fieldEvidence.quote 可选取足以证明字段的一段连续原文，不必包含整个字段描述。表格中间夹有条款号、字段名时应保留，不能跳列拼接成连续引文。',
         '- evidence 指向最能证明这些要素的那一段',
         '',
         '原文：',
-        require('./analysis').projectContext(sections)
+        require('./analysis').projectContext(sections,pages)
       ].join('\n')
     };
   },

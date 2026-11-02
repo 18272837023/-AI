@@ -1,18 +1,19 @@
 'use strict';
 function cleanName(value) {
   const name = String(value || '').trim();
-  return name && name.length <= 200 && !/^(?:未识别|未命名|待确认|待填写|不详|未知|项目名称|工程名称|招标文件|招标公告|段名称[）)]|标段名称[）)])/.test(name) ? name : '';
+  return name && name.length <= 200 && !/^(?:未识别|未命名|待确认|待填写|不详|未知|项目名称|工程名称|招标文件|招标公告|段名称[）)]|标段名称[）)]|[|｜])/.test(name)&&!/[（(]\s*(?:项目|工程|标段)名称\s*[)）]/.test(name) ? name : '';
 }
 function extractName(doc) {
   for (const page of doc.pages || []) {
     const lines = page.text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-    const cover=lines.slice(0,lines.findIndex(s=>s==='招标文件')>=0?lines.findIndex(s=>s==='招标文件'):0).join('').replace(/^[IVXLCDM\d]+/,'');
+    const coverEnd=lines.findIndex(s=>/^(?:公开)?招标文件$/.test(s.replace(/\s/g,'')));
+    const cover=lines.slice(0,coverEnd>=0?coverEnd:0).join('').replace(/^[IVXLCDM\d]+/,'');
     const labeled=/^(.+?)[（(]项目名称[）)](.+?)[（(]标段名称[）)]/.exec(cover);
     if(labeled){const name=cleanName(labeled[2]);if(name)return {name,evidence:{page:page.page,quote:lines.slice(0,5).join('\n')}};}
     for (let i = 0; i < lines.length; i++) {
       const m = /^(?:[\d.、（）()]+\s*)?(?:招标项目|采购项目|项目|工程)\s*名\s*称\s*[:：]?\s*(.*)$/.exec(lines[i]);
       if (!m) continue;
-      const raw = m[1] || lines[i + 1] || '';
+      const raw = (m[1] || lines[i + 1] || '').replace(/^\s*[|｜]\s*/,'');
       // DOCX 表格可能把字段和值分到相邻段落；后续字段不能被当作名称。
       const value = raw.split(/\t|\s+(?:招标编号|项目编号|建设地点|招标人|采购人)\s*[:：]/)[0].trim();
       const name = cleanName(value);
