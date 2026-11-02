@@ -646,6 +646,7 @@
   }
 
   function requireShim(p) {
+    if (String(p).indexOf('writing-profile') >= 0) return state.modules.writingProfile;
     if (String(p).indexOf('service') >= 0) return state.modules.service;
     if (String(p).indexOf('mock') >= 0) return state.modules.mock;
     throw new Error('预览器暂不支持该模块：' + p);
@@ -954,7 +955,8 @@
       getText('/api/appjs'),
       getText('/api/appwxss'),
       getText('/api/module?path=' + encodeURIComponent('utils/mock.js')),
-      getText('/api/module?path=' + encodeURIComponent('utils/service.js'))
+      getText('/api/module?path=' + encodeURIComponent('utils/service.js')),
+      getText('/api/module?path=' + encodeURIComponent('utils/writing-profile.js'))
     ]).then(function (res) {
       state.appConfig = res[0];
       state.appWxss = res[2];
@@ -968,8 +970,11 @@
         console.error('[mock.js 加载失败]', e);
       }
 
+      var profileModule = {exports:{}};
+      new Function('module', 'exports', res[5])(profileModule, profileModule.exports);
+      state.modules.writingProfile = profileModule.exports;
       var serviceModule = {exports:{}};
-      new Function('module', 'exports', 'wx', 'getApp', res[4])(serviceModule, serviceModule.exports, wxShim, getApp);
+      new Function('module', 'exports', 'wx', 'getApp', 'require', res[4])(serviceModule, serviceModule.exports, wxShim, getApp,requireShim);
       state.modules.service = serviceModule.exports;
 
       // App

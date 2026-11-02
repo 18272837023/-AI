@@ -27,7 +27,7 @@ function assertIdle(tenderId) {
 
 function startJob(tender, stage, options) {
   const running = findRunningJob(tender.id, stage);
-  if (running) return { job: running, reused: true };
+  if (running) {if((running.options?.scoreId||null)!==(options?.scoreId||null))throw Object.assign(Error('项目有其他生成任务正在执行，请等待完成后重试本章'),{statusCode:409});return { job: running, reused: true };}
 
   assertIdle(tender.id);
   const def = pipeline.STAGES[stage];
@@ -348,7 +348,8 @@ const routes = [
       const body=await readJson(req);
       const t = requireTender(params);
       if (!t.blueprint) throw Object.assign(new Error('请先生成施工图'), { statusCode: 400 });
-      const { job, reused } = startJob(t, 'elements',{retryFailed:body.retryFailed===true});
+      if(body.scoreId!==undefined&&(typeof body.scoreId!=='string'||!t.blueprint.some(bp=>sameScore(bp.scoreId,body.scoreId))))throw Object.assign(Error('请选择有效的重试章节'),{statusCode:400});
+      const { job, reused } = startJob(t, 'elements',{retryFailed:body.retryFailed===true||body.scoreId!==undefined,...(body.scoreId!==undefined?{scoreId:body.scoreId}:{})});
       ok(res, { jobId: job.id, stage: job.stage, reused });
     }
   },
@@ -360,8 +361,9 @@ const routes = [
       const body=await readJson(req);
       const t = requireTender(params);
       if (!t.elements) throw Object.assign(new Error('请先生成要素表'), { statusCode: 400 });
-      if(t.blueprint?.some(bp=>!t.elements.some(g=>sameScore(g.scoreId,bp.scoreId)&&bp.elements.every(e=>g.rows?.some(r=>r.elementId===e.id)))))throw Object.assign(Error('还有评分项的要素表未完成，请先重试要素表生成'),{statusCode:400});
-      const { job, reused } = startJob(t, 'generate',{retryFailed:body.retryFailed===true});
+      if(body.scoreId!==undefined&&(typeof body.scoreId!=='string'||!t.blueprint?.some(bp=>sameScore(bp.scoreId,body.scoreId))))throw Object.assign(Error('请选择有效的重试章节'),{statusCode:400});
+      if(t.blueprint?.filter(bp=>body.scoreId===undefined||sameScore(bp.scoreId,body.scoreId)).some(bp=>!t.elements.some(g=>sameScore(g.scoreId,bp.scoreId)&&bp.elements.every(e=>g.rows?.some(r=>r.elementId===e.id)))))throw Object.assign(Error('还有评分项的要素表未完成，请先重试要素表生成'),{statusCode:400});
+      const { job, reused } = startJob(t, 'generate',{retryFailed:body.retryFailed===true||body.scoreId!==undefined,...(body.scoreId!==undefined?{scoreId:body.scoreId}:{})});
       ok(res, { jobId: job.id, stage: job.stage, reused });
     }
   },

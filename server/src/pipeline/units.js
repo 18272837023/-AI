@@ -362,6 +362,7 @@ const PROMPTS = {
       system: SYSTEM_WRITE,
       user: [
         '任务：把施工图要素表填成可写正文的要素表。每一行回答四个问题：怎么做、做到什么程度、谁负责、多久一次。',
+        `- items 必须恰好只有一个对象，该对象 scoreId 必须原样为 ${JSON.stringify(blueprintRow.scoreId)}；所有要素放在这个对象的 rows 中，不得拆成多个 items 对象。`,
         '规则：',
         '- approach 必须是可执行动作，不要写"加强管理"这类空话',
         '- elementId 必须原样照抄下方要素里的 id（如 E1、E2），不得改写、合并或新增；每个要素各出一行',
@@ -378,16 +379,23 @@ const PROMPTS = {
   },
 
   sections(elementRow, context = {}) {
+    const plan=context.writingPlan||require('../../../miniprogram/utils/writing-profile').planFor(elementRow.item,elementRow.rows?.length||0,context);
     return {
       system: SYSTEM_WRITE,
       user: [
         '任务：把要素表展开成技术标正文。',
+        `- items 必须恰好只有一个对象，该对象 scoreId 必须原样为 ${JSON.stringify(elementRow.scoreId)}，title 为 ${JSON.stringify(elementRow.item)}。当前批次全部要素放在 items[0].blocks 中，用 h4 区分要素，不得把每条要素拆成一个 items 对象。`,
         '铁律：',
         '- 依据项目范围完整编写方案，展开工艺流程、责任岗位、检查和处置机制。合理的未来实施计划属于你应撰写的内容，应写清拟采取的安排，不得伪称已完成的事实',
         '- 每个段落都要在 covers 里标明它回应了哪些要素 id：只能填要素表中原样出现的 elementId（如 E1、E2），不得填章节名、评分项名或自造编号',
         '- 旧要素表里的段落数量、图表数量、工作步骤、检查频次、管理措施等写作任务由你完成，不得保留成用户待填。仅无法代替用户确认的真实业绩、进场安排和实测事实保留占位符',
         '- 段落里不要出现公司名、品牌名、人名（暗标）',
-        '- 一段 150—300 字，用"做法 + 参数 + 频次 + 责任人岗位"的信息密度写，不要空话',
+        '- 本次只写当前要素表列出的要素；chapterOutline 是整章目录供衔接使用，不得提前写其他批次，不重复章首介绍或章末总结。',
+        `- 每条要素目标约${plan.perElementLow}—${plan.perElementHigh}字，以小标题分节，至少${plan.minBlocks}个实质段落。每段说明具体对象与动作，不以一句概括代替方案。${plan.constrained?'已按招标页数约束压缩，请严格控制篇幅。':'对重点工艺与风险适当深化。'}`,
+        '- 按章节性质展开：工程概况重在已知事实、范围边界、项目特点和实施约束；施工/服务方案应说明准备条件、分步实施、工序衔接、关键控制、检查验收、异常处置和记录闭环。',
+        '- 每条结合本项目规模、场地、工期、专业界面或评分要求解释为什么这样安排，说明责任岗位、实施时点/频次、验收条件和不符合项如何整改复核。',
+        '- 只有有助于说明操作或验收的地方才用表格；不要堆砌空表、重复段落或与本章无关的通用制度。无依据的技术数值、强制标准编号、既有业绩和实测数据不得编造。',
+        '- 写作规则仅用于约束你的输出，不得在投标正文中解释“AI生成”“当前批次”“不编造参数”等编写过程；未知条件用正常工程语言说明复核、深化或移交程序。',
         '',
         '要素表：',
         JSON.stringify(elementRow, null, 2),
@@ -397,4 +405,5 @@ const PROMPTS = {
   }
 };
 
-module.exports = { SCHEMAS, PROMPTS, SYSTEM_BASE, docBlock, pickSections, L };
+function forScore(schema,scoreId){return {...schema,properties:{...schema.properties,items:{...schema.properties.items,minItems:1,maxItems:1,items:{...schema.properties.items.items,properties:{...schema.properties.items.items.properties,scoreId:{type:'string',const:scoreId}}}}}};}
+module.exports = { SCHEMAS, PROMPTS, SYSTEM_BASE, docBlock, pickSections, L,forScore };

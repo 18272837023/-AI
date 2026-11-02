@@ -1,0 +1,17 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
+const serviceModule={exports:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/utils/service.js'),'utf8'),{module:serviceModule,exports:serviceModule.exports,require:id=>require(path.join(__dirname,'../../miniprogram/utils',id))});const real=serviceModule.exports;
+function fixture(){return {revision:1,name:'测试',parse:{project:{},scores:['A','B','C'].map(id=>({id,item:id+'章节'}))},blueprint:['A','B','C'].map(id=>({scoreId:id,item:id+'章节',elements:[{id:'E1',name:'控制措施'}]})),elements:[{scoreId:'A',rows:[{elementId:'E1'}]}],sections:[{scoreId:'A',title:'A章节',blocks:[{type:'p',text:'已经人工修改的正文',covers:['E1']}],wordCount:10}],elementsMeta:{failed:[{scoreId:'B',error:'要素失败'},{scoreId:'C',error:'C失败'}]}};}
+function load(api){let config;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages/generating/generating.js'),'utf8'),{Page:p=>config=p,require:()=>api,wx:{redirectTo:()=>assert.fail('尚有失败章不能跳转')},setTimeout:()=>assert.fail('尚有失败章不能完成')});return {...config,data:JSON.parse(JSON.stringify(config.data)),setData:p=>{throw Error('bind below');}};}
+test('单章重试按钮只发送所选评分项，先补要素再写正文，其他失败章节保留',async()=>{
+ let t=fixture();const before=JSON.stringify(t.sections[0]),calls=[];
+ const api={action:async(p,fn)=>{p._busy=true;try{return await fn();}finally{p._busy=false;}},refresh:async()=>t,generationChapters:real.generationChapters,stageReady:real.stageReady,stage:async(name,progress,page,options)=>{calls.push({name,...options});progress({stage:name,status:'running',step:1,options,items:[{scoreId:'B',status:'running'}]});
+ if(name==='elements'){t={...t,elements:t.elements.concat({scoreId:'B',rows:[{elementId:'E1'}]}),elementsMeta:{failed:[{scoreId:'C',error:'C失败'}]}};}else t={...t,sections:t.sections.concat({scoreId:'B',title:'B章节',blocks:[{type:'p',text:'完成的B章节',covers:['E1']}],wordCount:6})};return t;}};
+ const page=load(api);page.setData=p=>Object.assign(page.data,p);await page.retryChapter({currentTarget:{dataset:{id:'B'}}});assert.deepEqual(calls,[{name:'elements',retryFailed:true,scoreId:'B'},{name:'generate',retryFailed:true,scoreId:'B'}]);assert.equal(page.data.chapters[1].status,'ok');assert.equal(page.data.chapters[2].status,'error');assert.equal(page.data.chapters[2].canRetry,true);assert.match(page.data.error,/其他未完成章节/);assert.equal(JSON.stringify(t.sections[0]),before);assert.equal(page.data.activeRetryId,'');
+});
+test('单章失败后按钮仍可重试并显示本章原因，成功章节不会跟着变成失败',async()=>{
+ const t=fixture();const api={action:async(p,fn)=>fn(),refresh:async()=>t,generationChapters:real.generationChapters,stageReady:real.stageReady,stage:async()=>{throw Error('本章模型暂时不可用');}};const page=load(api);page.setData=p=>Object.assign(page.data,p);await assert.rejects(page.retryChapter({currentTarget:{dataset:{id:'B'}}}),/本章模型/);assert.equal(page.data.chapters[0].status,'ok');assert.equal(page.data.chapters[1].canRetry,true);assert.match(page.data.chapters[1].errorText,/本章模型/);assert.equal(page.data.activeRetryId,'');
+});
+test('单章任务进行时其他章节映射维持原状态，失败信息和具体重试入口可定位',()=>{
+ const t=fixture(),rows=real.generationChapters(t,{stage:'elements',status:'running',step:1,options:{scoreId:'B'},items:[{scoreId:'B',status:'running'}]});assert.equal(rows[0].status,'ok');assert.equal(rows[1].status,'sheet');assert.equal(rows[2].status,'error');assert.equal(rows[2].canRetry,true);assert.equal(rows[2].errorText,'C失败');
+});

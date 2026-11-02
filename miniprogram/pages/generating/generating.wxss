@@ -219,3 +219,8 @@
 .st.prepared { color: #165dff; background: #eaf1ff; }
 .st.error { color: #d43838; background: #fff0ef; }
 .gt-meta { line-height: 1.6; }
+.chapter-retry { flex: none; margin: 0; padding: 0 14rpx; min-width: 112rpx; height: 60rpx; line-height: 60rpx; font-size: 22rpx; color: #165DFF; background: #EAF1FF; border-radius: 12rpx; }
+.chapter-retry::after { border: none; }
+.chapter-retry[disabled] { color: #9AA1AC; background: #F2F3F5; }
+.failure-detail { color: #8B5555; font-size: 20rpx; line-height: 1.5; margin-top: 8rpx; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.generation-error { margin: 24rpx 36rpx 0; padding: 22rpx; border-radius: 16rpx; background: #FFF3EF; color: #AD4E00; font-size: 24rpx; line-height: 1.6; }

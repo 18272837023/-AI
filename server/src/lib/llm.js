@@ -45,7 +45,7 @@ function extractJson(text) {
   }
 }
 
-async function callOnce({ system, user, temperature, jsonMode, timeoutMs }) {
+async function callOnce({ system, user, temperature, jsonMode, timeoutMs, maxTokens }) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs || config.llm.timeoutMs);
   const started = Date.now();
@@ -63,7 +63,8 @@ async function callOnce({ system, user, temperature, jsonMode, timeoutMs }) {
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        ...(jsonMode ? { response_format: { type: 'json_object' } } : {})
+        ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+        ...(Number.isInteger(maxTokens)&&maxTokens>0?{max_tokens:maxTokens}:{})
       }),
       signal: controller.signal
     });
@@ -74,6 +75,7 @@ async function callOnce({ system, user, temperature, jsonMode, timeoutMs }) {
     }
     const json = await res.json();
     const choice = (json.choices || [])[0] || {};
+    if(choice.finish_reason==='length')throw Error('模型输出达到长度上限，当前内容未完整生成');
     return {
       text: choice.message && choice.message.content ? choice.message.content : '',
       usage: json.usage || {},
@@ -123,7 +125,7 @@ async function runUnit(spec) {
 
     let raw;
     try {
-      raw = await callOnce({ system: system + '\n输出必须符合以下 JSON Schema：\n' + JSON.stringify(schema), user: user + retryHint, temperature, jsonMode: true, timeoutMs:spec.timeoutMs });
+      raw = await callOnce({ system: system + '\n输出必须符合以下 JSON Schema：\n' + JSON.stringify(schema), user: user + retryHint, temperature, jsonMode: true, timeoutMs:spec.timeoutMs,maxTokens:spec.maxTokens });
       totalMs += raw.ms || 0;
       totalUsage.prompt_tokens += (raw.usage && raw.usage.prompt_tokens) || 0;
       totalUsage.completion_tokens += (raw.usage && raw.usage.completion_tokens) || 0;

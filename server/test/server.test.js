@@ -409,12 +409,12 @@ test('单章生成失败不拖垮整阶段，其余章节照常产出', async ()
 
 test('生成列表映射预计字数、实际字数、loading 和失败，兼容旧任务', () => {
  const vm=require('node:vm'),module={exports:{}};
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/utils/service.js'),'utf8'),{module,exports:module.exports});
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/utils/service.js'),'utf8'),{module,exports:module.exports,require:id=>require(path.join(__dirname,'../../miniprogram/utils',id))});
  const t={name:'测试',parse:{scores:[{id:'S1',item:'质量措施'},{id:'S2',item:'安全措施'}]},blueprint:[{scoreId:'S1',elements:[{id:'E1'},{id:'E2'}]},{scoreId:'S2',elements:[{id:'E1'}]}]};
  let rows=module.exports.generationChapters(t);
- assert.equal(rows[0].index,1);assert.equal(rows[0].wordLabel,'预计 300—600 字');assert.equal(rows[0].elementLabel,'2 条要素');
+ assert.equal(rows[0].index,1);assert.equal(rows[0].wordLabel,'预计 1100—1800 字');assert.equal(rows[0].elementLabel,'2 条要素');
  rows=module.exports.generationChapters(t,{stage:'generate',status:'running',step:2,items:[{scoreId:'S1',status:'done',wordCount:320,elementCount:2},{scoreId:'S2',status:'running',wordCount:null,elementCount:1}]});
- assert.equal(rows[0].status,'ok');assert.equal(rows[0].wordLabel,'实际 320 字');assert.equal(rows[1].status,'write');assert.equal(rows[1].wordLabel,'预计 150—300 字');
+ assert.equal(rows[0].status,'ok');assert.equal(rows[0].wordLabel,'实际 320 字');assert.equal(rows[1].status,'write');assert.equal(rows[1].wordLabel,'预计 550—900 字');
  rows=module.exports.generationChapters(t,{stage:'generate',status:'failed',step:2});
  assert.equal(rows[0].status,'ok');assert.equal(rows[1].status,'error');
  rows=module.exports.generationChapters(t,{stage:'elements',status:'running',step:1});
@@ -676,6 +676,30 @@ test('多章修复先失败一章仍继续后面的章节，部分成功真实�
 test('生成重试只处理缺失章节，保留已完成章节及人工修改',async()=>{
  const t=missingChapterFixture(),old=llm.runUnit,before=JSON.stringify(t.sections);let calls=0;
  try{llm.runUnit=async spec=>{calls++;const data=completedSectionData(t,'10');assert.equal(spec.validateData(data),null);return {data};};const started=await request(`/v1/tenders/${t.id}/generate`,{retryFailed:true});const job=await awaitJob(started.data.jobId);assert.equal(job.status,'done',job.error);assert.equal(calls,1);assert.equal(JSON.stringify(t.sections.filter(s=>s.scoreId!=='10')),before);assert.deepEqual(t.sections.map(s=>s.scoreId),['9','10','11']);}finally{llm.runUnit=old;}
+});
+
+test('指定章节重试依次补要素和正文，允许其他章节尚缺要素，保留成功稿与其他失败记录',async()=>{
+ const t=missingChapterFixture(['10','11']),old=llm.runUnit,calls=[],before=JSON.stringify(t.sections);
+ t.elements=t.elements.filter(g=>g.scoreId==='9');t.elementsMeta={failed:[{scoreId:'10',error:'10失败'},{scoreId:'11',error:'11失败'}]};t.generateMeta={failed:[{scoreId:'11',error:'11正文尚未完成'}]};
+ try{llm.runUnit=async spec=>{if(spec.name==='M13 要素表'){calls.push('elements-10');return {data:{items:[require('../src/pipeline/baseline').elementTable(t.blueprint[1])]}};}calls.push('generate-10');return {data:completedSectionData(t,'10')};};
+ let r=await request(`/v1/tenders/${t.id}/elements`,{scoreId:'10'});assert.equal(r.status,200);await awaitJob(r.data.jobId);
+ assert.deepEqual(t.elements.map(g=>g.scoreId),['9','10']);assert.equal(JSON.stringify(t.sections),before);assert.deepEqual(t.elementsMeta.failed.map(f=>f.scoreId),['11']);
+ r=await request(`/v1/tenders/${t.id}/generate`,{scoreId:'10'});assert.equal(r.status,200);const job=await awaitJob(r.data.jobId);assert.equal(job.status,'done',job.error);assert.deepEqual(calls,['elements-10','generate-10']);assert.equal(JSON.stringify(t.sections.filter(s=>s.scoreId==='9')),before);assert.ok(t.sections.some(s=>s.scoreId==='10'));assert.ok(!t.sections.some(s=>s.scoreId==='11'));assert.equal(t.generateMeta.failed[0].scoreId,'11');
+ assert.equal((await request(`/v1/tenders/${t.id}/generate`,{scoreId:'不存在'})).status,400);
+ }finally{llm.runUnit=old;}
+});
+test('本章重试失败保留其他人工正文，重复重试已完成章不会重写成功稿',async()=>{
+ const t=missingChapterFixture(['10']),old=llm.runUnit,before=JSON.stringify(t.sections);let calls=0;
+ try{llm.runUnit=async()=>{calls++;throw Error('本章模型暂时不可用');};let r=await request(`/v1/tenders/${t.id}/generate`,{scoreId:'10'});await awaitJob(r.data.jobId);assert.equal(calls,1);assert.equal(JSON.stringify(t.sections),before);assert.match(t.generateMeta.failed[0].error,/本章模型/);
+ r=await request(`/v1/tenders/${t.id}/generate`,{scoreId:'9'});await awaitJob(r.data.jobId);assert.equal(calls,1);assert.equal(JSON.stringify(t.sections),before);
+ }finally{llm.runUnit=old;}
+});
+test('其他章节正在执行时不能误复用其任务，同一章的重复点击只复用一个任务',async()=>{
+ const t=missingChapterFixture(['10','11']),old=llm.runUnit;let finish,started;
+ const active=new Promise(resolve=>started=resolve);
+ try{llm.runUnit=async()=>{started();return new Promise(resolve=>finish=resolve);};const r=await request(`/v1/tenders/${t.id}/generate`,{scoreId:'10'});await active;
+ assert.equal((await request(`/v1/tenders/${t.id}/generate`,{scoreId:'11'})).status,409);const same=await request(`/v1/tenders/${t.id}/generate`,{scoreId:'10'});assert.equal(same.data.reused,true);assert.equal(same.data.jobId,r.data.jobId);finish({data:completedSectionData(t,'10')});await awaitJob(r.data.jobId);
+ }finally{llm.runUnit=old;}
 });
 test('生成页不会将部分正文当作完成或自动跳转，并显示仅重试缺章的提示',async()=>{
  const vm=require('node:vm'),t=missingChapterFixture(),serviceModule={exports:{}};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/utils/service.js'),'utf8'),{module:serviceModule,exports:serviceModule.exports});const real=serviceModule.exports;assert.equal(real.stageReady(t,'sections'),false);assert.equal(real.stageReady(t,'elements'),true);

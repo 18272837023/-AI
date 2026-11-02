@@ -299,12 +299,14 @@ async function runElements(jobId, tender) {
   const bp = tender.blueprint;
   if (!bp || !bp.length) throw Object.assign(new Error('还没生成施工图'), { statusCode: 400 });
 
-  initItems(jobId, bp, row => row.elements.length);
-  const retry=!!store.getJob(jobId).options?.retryFailed;
+  const target=store.getJob(jobId).options?.scoreId,selected=target?bp.filter(row=>same(row.scoreId,target)):bp;
+  if(!selected.length)throw Error('重试章节已不存在，请刷新后重试');
+  initItems(jobId, selected, row => row.elements.length);
+  const retry=!!store.getJob(jobId).options?.retryFailed||!!target;
   const out = retry?JSON.parse(JSON.stringify(tender.elements||[])):[];
-  const failed = [];
+  const failed = target?(tender.elementsMeta?.failed||[]).filter(r=>!same(r.scoreId,target)):[];
   let i = 0;
-  for (const row of bp) {
+  for (const row of selected) {
     i += 1;
     step(jobId, i, `填要素表：${row.item}`);
     updateItem(jobId, i-1, {status:'running'});
@@ -313,13 +315,13 @@ async function runElements(jobId, tender) {
     try {
       const res = await llm.runUnit({
         name: 'M13 要素表',
-        ...PROMPTS.elementTable(row, { project: tender.parse.project, qualifications: tender.parse.qualifications,billOfQuantities:require('./attachment-context').attachmentContext(tender.doc?.sections||[],row.item),source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[row.item,'技术要求','招标范围','建设规模'],{max:10}),18000) }),
-        schema: SCHEMAS.elementTable,
+        ...PROMPTS.elementTable(row, { project: tender.parse.project, qualifications: tender.parse.qualifications,confirmedRows:retry?completed?.rows||[]:[],billOfQuantities:require('./attachment-context').attachmentContext(tender.doc?.sections||[],row.item),source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[row.item,'技术要求','招标范围','建设规模'],{max:10}),18000) }),
+        schema: require('./units').forScore(SCHEMAS.elementTable,row.scoreId),
         normalize: (data) => sanitizeElementIds(data, row.elements.map((e) => e.id)),
         validateData:data=>validateGroup(data,row,'rows'),
-        fallback: async () => {if(llm.isLive())throw Error('AI 要素表生成失败，请重试；未用演示模板替代真实内容');return { items: [base.elementTable(row)] };}
+        fallback: async ({reason}={}) => {if(llm.isLive())throw Error('本章要素表未生成完整：'+(reason||'模型暂时不可用')+'；请重试本章');return { items: [base.elementTable(row)] };}
       });
-      for(const group of res.data.items||[])putSection(out,group,bp);
+      for(const group of res.data.items||[])putSection(out,{...group,rows:group.rows.map(r=>retry&&completed?.rows?.find(old=>old.elementId===r.elementId)||r)},bp);
       updateItem(jobId, i-1, {status:'done'});
     } catch (e) {
       // 单章失败不拖垮整阶段：记录后继续，其余章节照常产出
@@ -330,6 +332,7 @@ async function runElements(jobId, tender) {
   }
 
   if (!out.length) {
+    store.updateTender(tender.id,{elementsMeta:{...tender.elementsMeta,failed,at:new Date().toISOString()}});
     throw Object.assign(
       new Error(`全部 ${bp.length} 个评分项的要素表都没生成成功。${failed[0] ? '首个错误：' + failed[0].error : ''}`),
       { statusCode: 422 }
@@ -360,27 +363,24 @@ async function runGenerate(jobId, tender) {
   const els = tender.elements;
   if (!els || !els.length) throw Object.assign(new Error('还没生成要素表'), { statusCode: 400 });
 
-  initItems(jobId, els, group => group.rows.length);
-  const retry=!!store.getJob(jobId).options?.retryFailed;
+  const target=store.getJob(jobId).options?.scoreId,selected=target?els.filter(group=>same(group.scoreId,target)):els;
+  if(!selected.length)throw Error('重试章节要素表不存在，请先重试本章要素表');
+  initItems(jobId, selected, group => group.rows.length);
+  const retry=!!store.getJob(jobId).options?.retryFailed||!!target;
   const out = retry?JSON.parse(JSON.stringify(tender.sections||[])):[];
   const generatedIds=new Set();
-  const failed = [];
+  const failed = target?(tender.generateMeta?.failed||[]).filter(r=>!same(r.scoreId,target)):[];
   let i = 0;
-  for (const group of els) {
+  for (const group of selected) {
     i += 1;
     step(jobId, i, `展开正文：${group.item}`);
     updateItem(jobId, i-1, {status:'running'});
     const completed=out.find(s=>same(s.scoreId,group.scoreId));
     if(retry&&completed?.blocks?.some(b=>b.type!=='h4'&&b.text?.trim())){updateItem(jobId,i-1,{status:'done',wordCount:completed.wordCount||0});continue;}
     try {
-      const res = await llm.runUnit({
-        name: 'M14 正文',
-        ...PROMPTS.sections(group, { project: tender.parse.project, qualifications: tender.parse.qualifications, outline: tender.parse.outline,billOfQuantities:require('./attachment-context').attachmentContext(tender.doc?.sections||[],group.item),source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[group.item,'技术要求','招标范围','建设规模'],{max:10}),18000) }),
-        schema: SCHEMAS.sections,
-        prepare:data=>require('./normalize-sections').normalizeSections(data,group.rows.map(r=>r.elementId)),
+      const res = await require('./chapter-content').generate(group, { project: tender.parse.project, qualifications: tender.parse.qualifications, outline: tender.parse.outline,totalElements:(tender.blueprint||[]).reduce((n,bp)=>n+bp.elements.length,0)||els.reduce((n,g)=>n+g.rows.length,0),billOfQuantities:require('./attachment-context').attachmentContext(tender.doc?.sections||[],group.item),source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[group.item,'技术要求','招标范围','建设规模'],{max:10}),18000) },{
         normalize: (data) => sanitizeCovers(data, group.rows.map((r) => r.elementId)),
-        validateData:data=>validateGroup(data,group,'blocks'),
-        fallback: async () => {if(llm.isLive())throw Error('AI 正文生成失败，请重试；未用演示模板替代真实内容');return { items: [base.sections(group)] };}
+        onPart:part=>updateItem(jobId,i-1,{part:part.index,parts:part.total,phaseLabel:`正在展开正文（本章第 ${part.index}/${part.total} 部分）`})
       });
       for (const sec of res.data.items || []) {
         const plain = (sec.blocks || []).map((b) => b.type==='table'?[b.text,...(b.rows||[]).map(r=>r.join(' | '))].join('\n'):b.text).join('\n');
@@ -402,6 +402,7 @@ async function runGenerate(jobId, tender) {
   }
 
   if (!out.length) {
+    store.updateTender(tender.id,{generateMeta:{...tender.generateMeta,failed,at:new Date().toISOString()}});
     throw Object.assign(
       new Error(`全部 ${els.length} 个章节都没生成成功。${failed[0] ? '首个错误：' + failed[0].error : ''}`),
       { statusCode: 422 }

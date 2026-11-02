@@ -118,24 +118,31 @@ function view(t) {
   const project = {...p, name:t.nameSource==='manual'?t.name:(p.name||t.name), projectType:fieldValue('type'),quality:fieldValue('quality'),location:fieldValue('location'),scope:fieldValue('scope'),duration:fieldValue('duration'),techScore:parse.scoreSum||0,techScoreText:parse.scoreSum>0?parse.scoreSum+' 分':'待重新识别',files:t.file?[{...t.file,size:(t.file.size/1024).toFixed(1)+' KB',kind:'main',tag:'招标文件'}]:[],purchaser:fieldValue('purchaser'),budget:fieldValue('budget'),deadline:fieldValue('deadline'),daysLeft:'—',bidNo:fieldValue('bidNo'),evalMethod:fieldValue('evalMethod'),pageLimit:fieldValue('pageLimit'),blind:fieldValue('blind'),outlineMode,outlineReason:parse.outline?.reason||'大纲模式尚未识别',outlineModeText:({strict:'严格按给定大纲',guided:'参考大纲',free:'自主编制'})[outlineMode],modeEvidence:{...parse.outline?.evidence,src:source(parse.outline?.evidence),confidence:parse.outline?.confidence, page:parse.outline?.evidence?.page||'页码未知'}};
   return {project, fieldDetails, quals, qualStats:{total:quals.length,tech:quals.filter(q=>q.resp==='tech').length,attach:quals.filter(q=>q.resp==='attach').length,none:quals.filter(q=>q.resp==='none').length,cats:['形式','资格','响应性'].map(name=>({name,count:quals.filter(q=>q.cat===name).length}))},scoreItems:scores,blueprintStats:stats,sourceMode:parse.meta?.mode || '未知',outline,techRisks:quals.map(q=>({...q,impact:q.resp==='attach'?'按原文准备对应证明材料，核对资质和时效；材料缺失可能影响资格审查':q.resp==='tech'?'由 AI 在技术标相应章节编写响应，自检检查覆盖情况':'核对投标文件整体的形式或商务要求，按招标原文办理'})),scoreSplit:[{label:'技术标（抽取合计）',score:parse.scoreSum||0,bg:'#EAF1FF',color:'#165DFF',scope:'in'}],stats:{chapters:scores.length,words:((t.sections||[]).reduce((n,s)=>n+s.wordCount,0)/10000).toFixed(2),elementsDone:done,elementsTotal:elements},degraded:!!parse.meta?.degraded && Object.values(parse.meta.degraded).some(Boolean)};
 }
-// 字数是按当前提示词每条要素约 150—300 字估算，完成后使用服务端实测值。
+// 与服务端写作预算一致；完成后使用实际字数。
 function generationChapters(t, job) {
   return view(t).scoreItems.map((score,i) => {
     const group=(t.elements||[]).find(g=>g.scoreId===score.id);
     const section=(t.sections||[]).find(s=>s.scoreId===score.id);
     const detail=(job?.items||[]).find(item=>item.scoreId===score.id);
     const count=detail?.elementCount ?? (score.elements.length || group?.rows?.length || 0);
-    let status=section?'ok':group?'prepared':'wait';
-    let label=section?'已完成':group?'要素表已就绪，等待生成正文':'排队中';
+    const hasBody=section?.blocks?.some(b=>b.type!=='h4'&&(b.text?.trim()||b.rows?.length));
+    const sheetFailure=t.elementsMeta?.failed?.find(row=>String(row.scoreId)===String(score.id)),bodyFailure=t.generateMeta?.failed?.find(row=>String(row.scoreId)===String(score.id));
+    let status=hasBody?'ok':group?'prepared':'wait';
+    let label=hasBody?'已完成':group?'要素表已就绪，等待生成正文':'排队中';
+    let errorText=bodyFailure?.error||sheetFailure?.error||'';
     let words=detail?.wordCount ?? section?.wordCount ?? null;
-    if(!job&&!section&&[...(t.generateMeta?.failed||[]),...(t.elementsMeta?.failed||[])].some(item=>String(item.scoreId)===String(score.id))){status='error';label='生成失败，点击重试补齐本章';}
-    if(job) {
+    if(!hasBody&&(bodyFailure||sheetFailure)){status='error';label='生成失败，可单独重试本章';}
+    if(job&&(!job.options?.scoreId||String(job.options.scoreId)===String(score.id))) {
       let state=detail?.status;
       if(!state) state=job.status==='done' || (job.step>0 && i<job.step-1)?'done':job.step>0 && i===job.step-1?(job.status==='failed'?'failed':'running'):'queued';
       status=state==='failed'?'error':state==='done'?(job.stage==='elements'?'prepared':'ok'):state==='running'?(job.stage==='elements'?'sheet':'write'):'wait';
       label=({error:'生成失败，可重试',prepared:'要素表已就绪，等待生成正文',ok:'已完成',sheet:'正在填写要素表',write:'正在生成正文',wait:job.stage==='elements'?'等待填写要素表':'排队中'})[status];
+      if(state==='running'&&detail?.phaseLabel)label=detail.phaseLabel;
+      if(detail?.error)errorText=detail.error;
     }
-    return {id:score.id,index:i+1,title:score.name,status,statusText:label,elementCount:count,elementLabel:count?count+' 条要素':'要素待拆解',estimatedWords:count?count*150+'—'+count*300:null,wordCount:words,wordLabel:words!==null?'实际 '+words+' 字':count?'预计 '+count*150+'—'+count*300+' 字':'字数待估算'};
+    if(status==='error'&&!hasBody)words=null;
+    const plan=section?.writingPlan||require('./writing-profile').planFor(score.name,count,{project:t.parse?.project,totalElements:(t.blueprint||[]).reduce((n,g)=>n+(g.elements||[]).length,0)}),estimated=count?plan.low+'—'+plan.high:null;
+    return {id:score.id,index:i+1,title:score.name,status,statusText:label,errorText,canRetry:status==='error',elementCount:count,elementLabel:count?count+' 条要素':'要素待拆解',estimatedWords:estimated,wordCount:words,wordLabel:words!==null?'实际 '+words+' 字':count?'预计 '+estimated+' 字':'字数待估算'};
   });
 }
 
