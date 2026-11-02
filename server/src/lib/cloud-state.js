@@ -5,9 +5,7 @@ let pool;
 function enabled(){return process.env.STORE_DRIVER==='mysql';}
 function db(){
  if(pool)return pool;
- const address=process.env.MYSQL_ADDRESS||'', match=/^([^:]+):(\d+)$/.exec(address);
- if(!match||!process.env.MYSQL_USERNAME||!process.env.MYSQL_PASSWORD||!process.env.MYSQL_DATABASE)throw Error('MySQL 连接配置不完整');
- pool=require('mysql2/promise').createPool({host:match[1],port:Number(match[2]),user:process.env.MYSQL_USERNAME,password:process.env.MYSQL_PASSWORD,database:process.env.MYSQL_DATABASE,charset:'utf8mb4',connectionLimit:8,connectTimeout:15000});
+ pool=require('mysql2/promise').createPool(require('./mysql-config').mysqlOptions(process.env));
  return pool;
 }
 async function init(){

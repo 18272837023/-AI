@@ -17,7 +17,7 @@ function setup(){
   return c;
  }};
  const module={exports:{}};
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/lib/cloud-state.js'),'utf8'),{module,process:{env:{STORE_DRIVER:'mysql',MYSQL_ADDRESS:'localhost:3306',MYSQL_DATABASE:'test',MYSQL_USERNAME:'test',MYSQL_PASSWORD:'not-real'}},require:name=>name==='mysql2/promise'?{createPool:()=>pool}:require(name),Map,JSON});
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../src/lib/cloud-state.js'),'utf8'),{module,process:{env:{STORE_DRIVER:'mysql',MYSQL_ADDRESS:'localhost:3306',MYSQL_DATABASE:'test',MYSQL_USERNAME:'test',MYSQL_PASSWORD:'not-real'}},require:name=>name==='mysql2/promise'?{createPool:()=>pool}:name==='./mysql-config'?require('../src/lib/mysql-config'):require(name),Map,JSON});
  return {cloud:module.exports,fail:()=>{fail=true;}};
 }
 
