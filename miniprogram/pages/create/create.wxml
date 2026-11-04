@@ -38,7 +38,8 @@
 
   <view class="upload-state" wx:if="{{uploadLabel}}" aria-live="polite">
     <view>{{uploadLabel}}</view>
-    <progress percent="{{uploadProgress}}" show-info active="{{uploading}}" stroke-width="6" activeColor="#165DFF" />
+    <!-- 分片回调直接驱动进度，避免 active 动画在每次更新时从 0 重播。 -->
+    <progress percent="{{uploadProgress}}" show-info stroke-width="6" activeColor="#165DFF" />
     <view wx:if="{{busy && !uploading}}">文件已传输，正在处理，请稍候…</view>
   </view>
   <!-- 项目名称 -->
