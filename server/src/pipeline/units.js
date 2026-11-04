@@ -383,7 +383,7 @@ const PROMPTS = {
     return {
       system: SYSTEM_WRITE,
       user: [
-        '任务：把要素表展开成技术标正文。',
+        context.expansion?'任务：仅编写本章新增的深入论述，原文由服务端保留，不返回或重写整章。遵守 context.expansion 中的追加要求。':'任务：把要素表展开成技术标正文。',
         `- items 必须恰好只有一个对象，该对象 scoreId 必须原样为 ${JSON.stringify(elementRow.scoreId)}，title 为 ${JSON.stringify(elementRow.item)}。当前批次全部要素放在 items[0].blocks 中，用 h4 区分要素，不得把每条要素拆成一个 items 对象。`,
         '铁律：',
         '- 依据项目范围完整编写方案，展开工艺流程、责任岗位、检查和处置机制。合理的未来实施计划属于你应撰写的内容，应写清拟采取的安排，不得伪称已完成的事实',

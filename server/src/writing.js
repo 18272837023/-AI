@@ -48,7 +48,11 @@ async function run(jobId,t,stage){
   const writingPlan=require('./pipeline/chapter-content').planFor(group.item,group.rows.length,{project:t.parse?.project,totalElements:(t.blueprint||[]).reduce((n,bp)=>n+bp.elements.length,0)});
   const deepen=options.action==='expand'||plan.created.has(String(sec.scoreId));
   const depthRules=deepen?[`按要素分节，每条目标约${writingPlan.perElementLow}—${writingPlan.perElementHigh}字，至少${writingPlan.minBlocks}个实质段落，说明项目针对性、实施步骤、关键控制、责任频次、检查验收和整改复核。概况类按已知事实、范围边界和实施约束展开，不虚构工程事实。`,writingPlan.constrained?'已根据技术标页数预算压缩篇幅，优先增加信息密度。':'不以重复原文、堆通用口号或空表增加字数。']:[];
-  result=await llm.runUnit({name:'章节 AI '+(options.action||'修复'),system:PROMPTS.sections(group).system,schema:require('./pipeline/units').forScore(SCHEMAS.sections,sec.scoreId),maxRetries:2,maxTokens:8192,prepare:data=>normalizeSections(data,group.rows.map(r=>r.elementId)),
+  if(stage==='chapter'&&options.action==='expand'){
+   const next=await require('./chapter-expansion').expand(sec,group,{project:t.parse?.project,qualifications:t.parse?.qualifications?.filter(q=>q.resp==='tech'),source:docBlock(pickSections(t.doc?.sections||[],[sec.title,'技术要求','招标范围'],{max:10}),18000)},
+    {onPart:p=>store.updateJob(jobId,{label:`扩写：${sec.title} · 第 ${p.round}/${p.rounds} 轮，第 ${p.index}/${p.total} 部分`})});
+   result={data:{items:[next]}};
+  }else result=await llm.runUnit({name:'章节 AI '+(options.action||'修复'),system:PROMPTS.sections(group).system,schema:require('./pipeline/units').forScore(SCHEMAS.sections,sec.scoreId),maxRetries:2,maxTokens:8192,prepare:data=>normalizeSections(data,group.rows.map(r=>r.elementId)),
    user:JSON.stringify({task:operation,issues,writingPlan,depthRules,project:t.parse?.project,requirements:t.parse?.qualifications?.filter(q=>q.resp==='tech'),source:docBlock(pickSections(t.doc?.sections||[],[sec.title,'技术要求','建设规模','招标范围'],{max:10}),18000),elementTable:group,original:{...sec,blocks:sec.blocks.filter(b=>!b.supplementGroupId)},supplements:require('./supplements').getGroups(t).map(g=>({name:g.name,declared:g.declared,entries:g.entries})),rules:['只返回当前scoreId的完整章节，不得新增其他评分项。已确认的补充事实由服务端保护并织入，请勿重复输出独立的补充资料块。','真实业绩、人员入场时间、现场实测容量不得猜填，相关已有待确认标记原样保留。','其余待确认如果是计划、流程、责任、频次、图表、编写统计，或拟投入的人员机械配置、设备清单、供应商与入场计划、现场移交界面这类投标人可自行拟定的内容，由你写成完整可执行方案，不要向用户提问。','合格性缺失需写出实质响应及原条款编号，不能只插编号。','所有原本已覆盖的要素仍须有实际正文回应。图表若用table必须写text为标题，rows为2—12行、2—6列字符串。']}),
    validateData:data=>{const err=validateGroup(data,group,'blocks');if(err)return err;const next=data.items[0];if(deepen&&llm.isLive()){const depthError=require('./pipeline/chapter-content').validateDepth(next,group,writingPlan);if(depthError)return depthError;}const plain=textOf(next);const facts=[...sec.plain.matchAll(new RegExp(MARKER.source,'g'))].filter(m=>needsUser(m[1])&&!isPlanHedge(m[1]));if(facts.some(m=>!plain.includes(m[0])))return '不得猜填或删除需要用户提供的真实事实占位符';
     // 与 rules/check.js 的 C5-A 口径保持一致：除用户事实外，占位符必须清零，
@@ -56,7 +60,7 @@ async function run(jobId,t,stage){
     const residual=[...plain.matchAll(new RegExp(MARKER.source,'g'))].filter(m=>!needsUser(m[1].trim())||isPlanHedge(m[1].trim()));
     if(residual.length)return '本章仍有 '+residual.length+' 处方案内容停留在待确认（'+residual.slice(0,3).map(m=>m[1].trim()).join('、')+'），这些属于应由你写实的方案内容，必须直接写成具体做法、频次或岗位';
     if(options.action==='expand'&&plain.replace(/\s/g,'').length<sec.plain.replace(/\s/g,'').length*1.15)return '扩写后的正文没有实质增加，请补充具体方法、步骤、控制要点与量化指标后再返回';if(options.action==='chart'&&!next.blocks.some(b=>b.type==='table'))return '配图表必须生成真实表格';for(const b of next.blocks.filter(b=>b.type==='table'))if(!b.rows?.length||b.rows.some(r=>r.length!==b.rows[0].length))return '表格列数不一致';return null;},
-   fallback:async()=>{throw Error('AI 暂未完成本次修改，原文已保留，请重试');}});
+   fallback:async({reason}={})=>{throw Error('本章修改未完成，原文已保留：'+(reason||'模型尚未启用或暂不可用'));}});
   }catch(e){
     // 单章失败不拖垮整次优化：记录后继续修其他章节，最后由 check 如实反映剩余阻断。
     failed.push({scoreId:sec.scoreId,title:sec.title,error:e.message});
@@ -69,14 +73,13 @@ async function run(jobId,t,stage){
   const next=result.data.items[0];
   // 单独保护用户补充的事实块，不允许模型重写或复制它们。
   const protectedBlocks=sec.blocks.filter(b=>b.supplementGroupId);
-  next.blocks=next.blocks.filter(b=>!protectedBlocks.some(p=>p.text===b.text));
-  next.blocks.push(...protectedBlocks);
+  if(!(stage==='chapter'&&options.action==='expand')){next.blocks=next.blocks.filter(b=>!protectedBlocks.some(p=>p.text===b.text));next.blocks.push(...protectedBlocks);}
   putSection(all,{...sec,...recalc(next),aiEdited:true},t.blueprint);
   // 要素表与对应正文同时成功后才一起保存，失败章节不留空壳或半成品。
   if(JSON.stringify(group)!==JSON.stringify(stagedElements.find(g=>same(g.scoreId,group.scoreId)))){const index=stagedElements.findIndex(g=>same(g.scoreId,group.scoreId));if(index<0)stagedElements.push(group);else stagedElements[index]=group;elementsChanged=true;}
   store.updateJob(jobId,{step:i+2,items:store.getJob(jobId).items.map((r,n)=>n===i?{...r,status:'done'}:r)});
  }
- if(failed.length===affected.length)throw Error('本次优化没有修完任何章节：'+failed.map(f=>`「${f.title}」${f.error}`).join('；'));
+ if(failed.length===affected.length)throw Error((stage==='chapter'?'本章处理未完成，原文已保留：':'本次优化没有修完任何章节：')+failed.map(f=>`「${f.title}」${f.error}`).join('；'));
  store.updateJob(jobId,{step:affected.length+2,label:'重新计算自检结果'});
  if(t.revision!==revision)throw Error('正文已经变化，本次修改未覆盖新内容，请重试');
  const check=checks.checkAll({...t,sections:all,elements:stagedElements});
