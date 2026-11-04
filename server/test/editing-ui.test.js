@@ -1,18 +1,18 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-function load(name,api,wx={}){let config;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages',name,name+'.js'),'utf8'),{require:()=>api,Page:p=>config=p,wx});return {...config,data:JSON.parse(JSON.stringify(config.data)),setData(patch){for(const [key,value] of Object.entries(patch)){const keys=key.replace(/\[(\d+)\]/g,'.$1').split('.');let obj=this.data;for(const part of keys.slice(0,-1))obj=obj[part];obj[keys.at(-1)]=value;}}};}
-test('待确认清单定位真实字段，筛选不丢失其他值，保存按ID关联而非列表位置',async()=>{
- const t={revision:3,elements:[{scoreId:'S2',item:'质量管理',rows:[{elementId:'E9',name:'材料检验',approach:'逐批检查',params:'〔待确认：现场临时用电容量〕',owner:'质量员',frequency:'每批次'}]},{scoreId:'S1',item:'施工安排',rows:[{elementId:'E1',name:'人员',approach:'进场交底',params:'20人',owner:'项目经理',frequency:''}]}],pendingFacts:[]};let selector,saved,redirect;
- const api={action:async(p,fn)=>fn(),ensure:async()=>t,save:async(k,v,revision)=>{assert.equal(revision,3);saved=v;},stage:async()=>{},path:()=>'/t'};
- const page=load('elements',api,{pageScrollTo:o=>selector=o.selector,showToast(){},redirectTo:o=>redirect=o.url});page.onLoad({pending:'1'});await page.onShow();assert.equal(page.data.pendingCount,2);assert.equal(page.data.filledCount,6);assert.equal(page.data.onlyPending,true);
- const link=page.data.pendingLinks[0];page.locatePending({currentTarget:{dataset:{anchor:link.anchor}}});assert.equal(selector,'#field-G0-R0-params');
- page.onInput({currentTarget:{dataset:{g:'G0',e:'R0',k:'params'}},detail:{value:'250kVA'}});assert.equal(page.data.pendingCount,1);assert.equal(page.data.groups[0].visiblePendingCount,1);assert.equal(page.data.groups[0].entries[0].fields[1].keepVisible,true,'输入中的字段不能因已填而立即消失');
- page.data.groups.reverse();await page.save();assert.equal(saved[0].rows[0].params,'250kVA');assert.equal(saved[0].rows[0].owner,'质量员');assert.equal(saved[1].rows[0].approach,'进场交底');assert.equal(redirect,'/pages/chapter/chapter');
+function load(name,api,wx={}){let config;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages',name,name+'.js'),'utf8'),{require:()=>api,Page:p=>config=p,wx});return {...config,data:JSON.parse(JSON.stringify(config.data||{})),setData(patch){for(const [key,value] of Object.entries(patch)){const keys=key.replace(/\[(\d+)\]/g,'.$1').split('.');let obj=this.data;for(const part of keys.slice(0,-1))obj=obj[part];obj[keys.at(-1)]=value;}}};}
+test('待补资料集中展示真实参数，已绑定固定字段不重复提问，输入后保留表单并缓存草稿',async()=>{
+ const t={revision:3,pendingFacts:[{marker:'现场临时用电容量',chapters:['现场条件']},{marker:'人员来源',chapters:['施工安排']}]};let draft;
+ const group={id:'F2',fields:[{key:'source',markers:[{marker:'人员来源'}]}],entries:[{id:'F2-1',fields:[{key:'source',value:'',required:true}]}]};
+ const api={action:async(p,fn)=>fn(),refresh:async()=>t,path:()=>'/t',request:async()=>({revision:3,groups:[group],stats:{groups:1},hasSections:true}),ensure:()=>assert.fail('待补资料不能生成要素表')};
+ const wx={setStorageSync:(k,v)=>draft=v};const page=load('fill',api,wx);await page.onShow();assert.equal(page.data.facts.length,1);assert.equal(page.data.facts[0].marker,'现场临时用电容量');assert.equal(page.data.totalFields,2);assert.equal(page.data.pendingCount,2);
+ page.onFactInput({currentTarget:{dataset:{id:'fact-0'}},detail:{value:'250kVA'}});assert.equal(page.data.pendingCount,1);assert.equal(page.data.facts[0].value,'250kVA');assert.equal(draft.facts[0].value,'250kVA');
+ const restored=load('fill',api,{getStorageSync:()=>draft});await restored.onShow();assert.equal(restored.data.facts[0].value,'250kVA');
 });
-test('正文真实资料保存同步更新要素后不重新生成已有正文',async()=>{
- let t={revision:2,elements:[{scoreId:'S1',item:'现场条件',rows:[{elementId:'E1',name:'电源',approach:'核对',params:'〔待确认：现场用电容量〕',owner:'电工',frequency:'每日'}]}],pendingFacts:[{marker:'现场用电容量',chapters:['现场条件']}],sections:[{scoreId:'S1'}]};let writes=0;
- const api={action:async(p,fn)=>fn(),ensure:async()=>t,refresh:async()=>t,path:()=>'/t',save:async()=>assert.fail('不应重写要素表'),stage:async()=>assert.fail('不应重生成正文'),request:async(url,method,b)=>{writes++;assert.equal(b.values[0].value,'250kVA');t=JSON.parse(JSON.stringify(t));t.revision=3;t.elements[0].rows[0].params='250kVA';t.pendingFacts=[];return {revision:3};}};
- const page=load('elements',api,{redirectTo(){}});await page.onShow();page.onFactInput({currentTarget:{dataset:{id:'fact-0'}},detail:{value:'250kVA'}});await page.save();assert.equal(writes,1);
+test('保存集中真实资料使用最新版本同步原文，不重写编写数据或重新生成正文',async()=>{
+ let t={revision:2,pendingFacts:[{marker:'现场用电容量',chapters:['现场条件']}],sections:[{scoreId:'S1'}]},writes=[];let redirect;
+ const api={action:async(p,fn)=>fn(),refresh:async()=>t,path:()=>'/t',save:async()=>assert.fail('不应保存编写数据'),stage:async()=>assert.fail('不应重生成正文'),request:async(url,method,b)=>{if(!method)return {revision:t.revision,groups:[],stats:{groups:0},hasSections:true};writes.push(url);assert.equal(b.revision,t.revision);t={...t,revision:t.revision+1};if(url.endsWith('/pending-facts')){assert.equal(b.values[0].value,'250kVA');t.pendingFacts=[];}return {revision:t.revision,groups:[],warnings:[]};}};
+ const page=load('fill',api,{redirectTo:o=>redirect=o.url});await page.onShow();page.onFactInput({currentTarget:{dataset:{id:'fact-0'}},detail:{value:'250kVA'}});await page.save();assert.deepEqual(writes,['/t/supplements','/t/pending-facts']);assert.equal(page.data.facts.length,0);assert.equal(redirect,'/pages/chapter/chapter');
 });
 test('确认无此项立即保存，失败恢复选择，成功使用新版本号',async()=>{
  let reject=false,writes=0;const g={id:'F1',canDeclare:true,declared:false,entries:[{id:'F1-1',fields:[]}]};
@@ -28,5 +28,5 @@ test('正文分片失败后保留项目，开始解析重试上传，不重复�
  await page.startParse();assert.equal(creates,1);assert.equal(uploads,2);assert.equal(entered,true);
 });
 test('人工新增章节无评分分值仍可确认大纲，真实评分缺失仍引导核对',()=>{
- let url;const page=load('blueprint',{}, {navigateTo:o=>url=o.url});page.data.items=[{id:'S1',score:10},{id:'manual',score:0,custom:true}];page.confirm();assert.equal(url,'/pages/outline/outline');page.data.items[1].custom=false;page.confirm();assert.equal(url,'/pages/analysis/analysis');
+ let url;const page=load('outline',{}, {navigateTo:o=>url=o.url});page.data.outline=[{id:'S1',score:10},{id:'manual',score:0,custom:true}];page.startGenerate();assert.equal(url,'/pages/generating/generating');page.data.outline[1].custom=false;page.startGenerate();assert.equal(url,'/pages/analysis/analysis');
 });

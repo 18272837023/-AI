@@ -1,6 +1,7 @@
 <import src="/components/flowbar.wxml" />
 <view class="page">
   <template is="flowbar" data="{{step: 3}}" />
+  <view class="pad" wx:if="{{busy}}">正在准备大纲，请稍候…</view>
   <!-- 概览 -->
   <view class="ov">
     <view class="ov-item"><text class="num">{{stats.chapters}}</text><text class="lb">章节</text></view>
@@ -58,7 +59,6 @@
   <view class="placeholder-bar"></view>
 
   <view class="bottombar">
-    <button class="btn ghost small" bindtap="checkSheet">要素表</button>
-    <button class="btn" bindtap="startGenerate">开始生成正文</button>
+    <button class="btn" disabled="{{busy}}" bindtap="startGenerate">确认大纲并生成正文</button>
   </view>
 </view>

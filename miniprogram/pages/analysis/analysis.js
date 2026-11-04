@@ -7,6 +7,6 @@ Page({data:{project:{files:[],modeEvidence:{}},quals:[],qualStats:{cats:[]},scor
  saveParse(){api.action(this,async()=>{const t=await api.save('parse',JSON.parse(this.data.editJson),this._revision);this._revision=t.revision;this.setData({...api.view(t),editing:false});});},
  switchTab(e){this.setData({tab:Number(e.currentTarget.dataset.index)});},
  exportReport(){wx.showModal({title:'解析报告',content:'当前可在本页核对解析结果；Word 导出位于正文后的导出页。',showCancel:false});},
- goBlueprint(){this.confirm();},goOutline(){wx.navigateTo({url:'/pages/outline/outline'});},
- confirm(){if(this.data.project.techScore<=0){this.reparse();return;}api.action(this,async()=>{await api.ensure('blueprint','blueprint',j=>wx.showToast({title:j.label,icon:'none'}));wx.navigateTo({url:'/pages/blueprint/blueprint'});});}
+ goOutline(){return this.confirm();},
+ confirm(){if(this.data.project.techScore<=0){this.reparse();return;}return api.action(this,async()=>{await api.ensure('blueprint','blueprint');wx.navigateTo({url:'/pages/outline/outline'});});}
 });

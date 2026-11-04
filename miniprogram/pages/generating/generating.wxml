@@ -8,13 +8,6 @@
     </view>
     <view class="pbar"><view class="pbar-in" style="width:{{percent}}%"></view></view>
 
-    <view class="steps2">
-      <view class="s2 {{stage >= 1 ? 'on' : ''}}"><text class="s2n">1</text>准备要素表</view>
-      <view class="s2-ln"></view>
-      <view class="s2 {{stage >= 2 ? 'on' : ''}}"><text class="s2n">2</text>按要素表展开正文</view>
-      <view class="s2-ln"></view>
-      <view class="s2 {{stage >= 3 ? 'on' : ''}}"><text class="s2n">3</text>补充必填字段</view>
-    </view>
   </view>
 
   <view class="generation-error" wx:if="{{error}}">{{error}}</view>
@@ -22,7 +15,7 @@
   <view class="glist">
     <view class="gitem" wx:for="{{chapters}}" wx:key="id">
       <view class="st {{item.status}}">
-        <text wx:if="{{item.status === 'ok' || item.status === 'prepared'}}">✓</text>
+        <text wx:if="{{item.status === 'ok'}}">✓</text>
         <view wx:elif="{{item.status === 'sheet' || item.status === 'write'}}" class="chapter-spinner"></view>
         <text wx:elif="{{item.status === 'error'}}">!</text>
         <text wx:else>{{item.index}}</text>
@@ -30,7 +23,7 @@
       <view class="gt">
         <view class="gt-title">{{item.title}}</view>
         <view class="gt-status {{item.status}}">{{item.statusText}}</view>
-        <view class="gt-meta">{{item.wordLabel}} · {{item.elementLabel}}</view>
+        <view class="gt-meta">{{item.wordLabel}}</view>
         <view class="failure-detail" wx:if="{{item.status === 'error' && item.errorText}}">{{item.errorText}}</view>
       </view>
       <button class="chapter-retry" wx:if="{{item.canRetry}}" disabled="{{busy}}" data-id="{{item.id}}" bindtap="retryChapter">{{activeRetryId === item.id ? '重试中…' : '重试本章'}}</button>

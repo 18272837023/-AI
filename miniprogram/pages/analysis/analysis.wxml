@@ -3,7 +3,7 @@
   <template is="flowbar" data="{{step: 2}}" />
 
   <view class="scope-tip" wx:if="{{degraded}}">当前解析包含规则模拟或降级结果，请逐项核对真实原文。</view>
-  <view class="pad"><button class="btn ghost" bindtap="editParse">核对并修改解析数据</button><view wx:if="{{editing}}"><view class="note">保留字段名与 ID。保存会清除施工图、要素表及正文。</view><textarea value="{{editJson}}" bindinput="onJson" maxlength="-1" style="width:100%;height:600rpx"/><button class="btn" disabled="{{busy}}" bindtap="saveParse">保存解析修改</button></view></view>
+  <view class="pad"><button class="btn ghost" bindtap="editParse">核对并修改解析数据</button><view wx:if="{{editing}}"><view class="note">保留字段名与 ID。保存后需要重新确认大纲并生成正文。</view><textarea value="{{editJson}}" bindinput="onJson" maxlength="-1" style="width:100%;height:600rpx"/><button class="btn" disabled="{{busy}}" bindtap="saveParse">保存解析修改</button></view></view>
   <view class="scope-tip">当前文件：{{project.files[0].name || '未上传'}} · {{project.files[0].size}} · {{sourceMode === 'live' ? '真实模型解析' : (sourceMode === 'mock' ? '规则模拟解析' : '模式待确认')}}</view>
   <!-- 项目卡 -->
   <view class="projcard">
@@ -145,7 +145,7 @@
     </view>
 
     <view class="pad" style="margin-top:28rpx">
-      <button class="btn ghost" bindtap="goBlueprint">查看施工图与要素表</button>
+      <button class="btn ghost" disabled="{{busy}}" bindtap="goOutline">确认并查看大纲</button>
     </view>
   </view>
 
@@ -211,6 +211,6 @@
 
   <view class="bottombar">
     <button class="btn ghost small" bindtap="exportReport">导出报告</button>
-    <button class="btn" disabled="{{busy}}" bindtap="confirm">{{busy ? '正在拆解要素…' : '确认解析结果'}}</button>
+    <button class="btn" disabled="{{busy}}" bindtap="confirm">{{busy ? '正在准备大纲…' : '确认解析结果'}}</button>
   </view>
 </view>

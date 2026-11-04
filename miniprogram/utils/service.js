@@ -129,7 +129,7 @@ function generationChapters(t, job) {
     const hasBody=section?.blocks?.some(b=>b.type!=='h4'&&(b.text?.trim()||b.rows?.length));
     const sheetFailure=t.elementsMeta?.failed?.find(row=>String(row.scoreId)===String(score.id)),bodyFailure=t.generateMeta?.failed?.find(row=>String(row.scoreId)===String(score.id));
     let status=hasBody?'ok':group?'prepared':'wait';
-    let label=hasBody?'已完成':group?'要素表已就绪，等待生成正文':'排队中';
+    let label=hasBody?'已完成':group?'等待生成正文':'排队中';
     let errorText=bodyFailure?.error||sheetFailure?.error||'';
     let words=detail?.wordCount ?? section?.wordCount ?? null;
     if(!hasBody&&(bodyFailure||sheetFailure)){status='error';label='生成失败，可单独重试本章';}
@@ -137,11 +137,12 @@ function generationChapters(t, job) {
       let state=detail?.status;
       if(!state) state=job.status==='done' || (job.step>0 && i<job.step-1)?'done':job.step>0 && i===job.step-1?(job.status==='failed'?'failed':'running'):'queued';
       status=state==='failed'?'error':state==='done'?(job.stage==='elements'?'prepared':'ok'):state==='running'?(job.stage==='elements'?'sheet':'write'):'wait';
-      label=({error:'生成失败，可重试',prepared:'要素表已就绪，等待生成正文',ok:'已完成',sheet:'正在填写要素表',write:'正在生成正文',wait:job.stage==='elements'?'等待填写要素表':'排队中'})[status];
+      label=({error:'生成失败，可重试',prepared:'等待生成正文',ok:'已完成',sheet:'正在准备章节内容',write:'正在生成正文',wait:'排队中'})[status];
       if(state==='running'&&detail?.phaseLabel)label=detail.phaseLabel;
       if(detail?.error)errorText=detail.error;
     }
     if(status==='error'&&!hasBody)words=null;
+    label=String(label||'').replace(/要素表/g,'章节内容');errorText=String(errorText).replace(/要素表/g,'章节内容');
     const plan=section?.writingPlan||require('./writing-profile').planFor(score.name,count,{project:t.parse?.project,totalElements:(t.blueprint||[]).reduce((n,g)=>n+(g.elements||[]).length,0)}),estimated=count?plan.low+'—'+plan.high:null;
     return {id:score.id,index:i+1,title:score.name,status,statusText:label,errorText,canRetry:status==='error',elementCount:count,elementLabel:count?count+' 条要素':'要素待拆解',estimatedWords:estimated,wordCount:words,wordLabel:words!==null?'实际 '+words+' 字':count?'预计 '+estimated+' 字':'字数待估算'};
   });

@@ -351,17 +351,17 @@ test('施工图内容校验拒绝评分项遗漏和空要素', async () => {
 });
 
 
-test('填写要素表先显示进度，完成后显示可编辑字段，失败可重试', async () => {
+test('待补资料先显示载入状态，完成后显示真实参数，载入失败可重试且不触发生成', async () => {
  const vm=require('node:vm'); let cfg,finish;
- const api={action:async(p,fn)=>fn(),ensure:async(stage,field,progress)=>{assert.equal(stage,'elements');progress({label:'填要素表：质量措施',progress:42});return new Promise(resolve=>finish=resolve);}};
- vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages/elements/elements.js'),'utf8'),{require:()=>api,Page:p=>cfg=p});
+ const api={action:async(p,fn)=>fn(),refresh:async()=>new Promise(resolve=>finish=resolve),path:()=>'/t',request:async()=>({revision:5,groups:[],stats:{groups:0},hasSections:true}),ensure:()=>assert.fail('不能要求用户生成要素表')};
+ vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages/fill/fill.js'),'utf8'),{require:()=>api,Page:p=>cfg=p,wx:{}});
  const page={...cfg,data:JSON.parse(JSON.stringify(cfg.data)),setData(patch){Object.assign(this.data,patch);}};
  const loading=page.onShow();
- assert.equal(page.data.loading,true);assert.equal(page.data.ready,false);assert.equal(page.data.jobProgress,42);
- finish({revision:5,elements:[{scoreId:'S1',item:'质量措施',rows:[{elementId:'E1',name:'材料检查',approach:'检查合格证',params:'〔待确认：抽检比例〕',owner:'质量员',frequency:'每批次'}]}]});
+ assert.equal(page.data.loading,true);assert.equal(page.data.ready,false);
+ finish({revision:5,pendingFacts:[{marker:'现场实测容量',chapters:['现场条件']}]});
  await loading;
- assert.equal(page.data.loading,false);assert.equal(page.data.ready,true);assert.equal(page.data.groups[0].entries[0].name,'材料检查');assert.equal(page.data.pendingCount,1);
- api.ensure=async()=>{throw Error('任务失败，请重试');};
+ assert.equal(page.data.loading,false);assert.equal(page.data.ready,true);assert.equal(page.data.facts[0].marker,'现场实测容量');assert.equal(page.data.pendingCount,1);
+ api.refresh=async()=>{throw Error('任务失败，请重试');};
  await assert.rejects(page.onShow(),/任务失败/);
  assert.equal(page.data.loading,false);assert.equal(page.data.ready,false);assert.equal(page.data.loadError,'任务失败，请重试');
 });

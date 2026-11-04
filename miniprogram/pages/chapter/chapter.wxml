@@ -5,7 +5,7 @@
   <!-- 待补字段提醒 -->
   <view class="fillbar" wx:if="{{fillPending > 0}}" bindtap="goFill">
     <text class="fb-ic">填</text>
-    <text class="fb-tx">有 {{fillPending}} 项真实信息待你补充</text>
+    <text class="fb-tx">有真实资料待你补充</text>
     <text class="fb-go">去填写 ›</text>
   </view>
 

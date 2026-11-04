@@ -1,7 +1,7 @@
 const api=require('../../utils/service.js');
 Page({data:{project:{modeEvidence:{}},outline:[],stats:{},mode:'free',canEdit:true,busy:false},
  onShow(){return api.action(this,()=>this.load());},
- async load(){const t=await api.refresh();this._revision=t.revision;const v=api.view(t);this.setData({...v,mode:v.project.outlineMode,canEdit:true});},
+ async load(){const t=await api.ensure('blueprint','blueprint');this._revision=t.revision;const v=api.view(t);this.setData({...v,mode:v.project.outlineMode,canEdit:true});},
  change(body){return api.action(this,async()=>{await api.request(api.path()+'/chapters','POST',{revision:this._revision,...body});await this.load();wx.showToast({title:'大纲已保存',icon:'success'});});},
  addChapter(){if(this._busy)return;wx.showModal({title:'新增章节',editable:true,placeholderText:'请输入章节标题',content:'',success:r=>{if(r.confirm)this.change({action:'add',title:r.content||''});}});},
  manage(e){if(this._busy)return;const index=Number(e.currentTarget.dataset.index),row=this.data.outline[index];if(!row)return;
@@ -12,6 +12,5 @@ Page({data:{project:{modeEvidence:{}},outline:[],stats:{},mode:'free',canEdit:tr
   }});
  },
  openChapter(e){const row=this.data.outline[Number(e.currentTarget.dataset.index)],sections=api.session.tender.sections||[],index=sections.findIndex(s=>String(s.scoreId)===String(row?.id));if(index<0)return wx.showToast({title:'本章尚未生成正文',icon:'none'});api.session.chapter=index;wx.navigateTo({url:'/pages/chapter/chapter'});},
- checkSheet(){wx.navigateTo({url:'/pages/blueprint/blueprint'});},
- startGenerate(){wx.navigateTo({url:'/pages/generating/generating'});}
+ startGenerate(){if(this._busy)return;if(!this.data.outline.length){wx.showToast({title:'大纲尚未准备好，请重新打开此页',icon:'none'});return;}if(this.data.outline.some(row=>!row.custom&&!(row.score>0))){wx.navigateTo({url:'/pages/analysis/analysis'});return;}wx.navigateTo({url:'/pages/generating/generating'});}
 });

@@ -16,7 +16,7 @@
     <view class="card ph-gap">
       <view class="ph-t">关于这个版本</view>
       <view class="ph-d">只做技术标（施工组织设计、技术方案、服务方案）。商务标、资格文件、报价需另行编制。</view>
-      <view class="ph-d">解析、施工图、要素表、正文生成与自检都在服务端完成；规则自检不通过时不能导出正式稿。</view>
+      <view class="ph-d">上传文件后确认解析结果与大纲，即可生成技术标；真实资料可在待补资料中填写，自检通过后导出正式稿。</view>
     </view>
 
     <view wx:if="{{isTemporaryTest}}" class="card ph-gap">

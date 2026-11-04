@@ -4,19 +4,21 @@ function mergeDraft(data,draft){
  return data.groups.map(g=>{const saved=draft.groups.find(x=>x.id===g.id);if(!saved?.entries?.length)return g;return {...g,declared:!!saved.declared,entries:saved.entries.slice(0,g.max).map((e,i)=>({id:g.id+'-draft-'+i,fields:g.entries[0].fields.map(f=>({...f,value:e.fields.find(x=>x.key===f.key)?.value||f.value}))}))};});
 }
 function fieldsOf(groups){return groups.filter(g=>!g.declared).flatMap(g=>g.entries.flatMap(e=>e.fields.filter(f=>f.type!=='label')));}
+function factsOf(t,draft,groups=[]){const bound=new Set(groups.flatMap(g=>(g.fields||g.entries?.[0]?.fields||[]).flatMap(f=>(f.markers||[]).map(m=>m.marker))));return (t.pendingFacts||[]).filter(f=>!bound.has(f.marker)).map((f,i)=>({...f,id:'fact-'+i,chapterText:(f.chapters||[]).join('、'),value:draft?.revision===t.revision?draft.facts?.find(row=>row.marker===f.marker)?.value||'':''}));}
 Page({
- data:{groups:[],stats:{groups:0},totalFields:0,filledCount:0,pendingCount:0,declaredCount:0,ready:false,loading:false,loadError:'',hasSections:false,busy:false},
+ data:{groups:[],facts:[],stats:{groups:0},totalFields:0,filledCount:0,pendingCount:0,declaredCount:0,ready:false,loading:false,loadError:'',hasSections:false,busy:false},
  onLoad(){this._unloaded=false;},onUnload(){this._unloaded=true;},
  onShow(){this._unloaded=false;return api.action(this,async()=>{
   this.setData({loading:true,ready:false,loadError:''});
-  try{await api.refresh();const data=await api.request(api.path()+'/supplements');if(this._unloaded)return;this._revision=data.revision;this._draftKey='fill-draft-'+api.path();const draft=wx.getStorageSync?.(this._draftKey);this.setData({groups:mergeDraft(data,draft),stats:data.stats,hasSections:data.hasSections,ready:true});this.refresh();}
+  try{const t=await api.refresh();const data=await api.request(api.path()+'/supplements');if(this._unloaded)return;this._revision=data.revision;this._draftKey='fill-draft-'+api.path();const draft=wx.getStorageSync?.(this._draftKey);this.setData({groups:mergeDraft(data,draft),facts:factsOf(t,draft,data.groups),stats:data.stats,hasSections:data.hasSections,ready:true});this.refresh();}
   catch(e){if(!this._unloaded)this.setData({loadError:e.message});throw e;}finally{if(!this._unloaded)this.setData({loading:false});}
  });},
  retry(){return this.onShow();},
  locate(d){const gi=this.data.groups.findIndex(g=>g.id===d.g);if(gi<0)return null;const ei=this.data.groups[gi].entries.findIndex(e=>e.id===d.e);if(ei<0)return null;const fi=this.data.groups[gi].entries[ei].fields.findIndex(f=>f.key===d.k);return fi<0?null:{gi,ei,fi};},
  onInput(e){const p=this.locate(e.currentTarget.dataset);if(!p)return;this.setData({['groups['+p.gi+'].entries['+p.ei+'].fields['+p.fi+'].value']:e.detail.value});this.refresh();},
  pick(e){this.onInput({currentTarget:e.currentTarget,detail:{value:e.currentTarget.dataset.v}});},
- refresh(){if(this.data.ready&&this._draftKey)wx.setStorageSync?.(this._draftKey,{revision:this._revision,groups:this.data.groups});const inputs=fieldsOf(this.data.groups);this.setData({totalFields:inputs.length,filledCount:inputs.filter(f=>f.value.trim()).length,pendingCount:inputs.filter(f=>f.required&&!f.value.trim()).length,declaredCount:this.data.groups.filter(g=>g.declared).length});},
+ onFactInput(e){const index=this.data.facts.findIndex(f=>f.id===e.currentTarget.dataset.id);if(index<0)return;this.setData({['facts['+index+'].value']:e.detail.value});this.refresh();},
+ refresh(){if(this.data.ready&&this._draftKey)wx.setStorageSync?.(this._draftKey,{revision:this._revision,groups:this.data.groups,facts:this.data.facts});const inputs=fieldsOf(this.data.groups),facts=this.data.facts||[];this.setData({totalFields:inputs.length+facts.length,filledCount:inputs.filter(f=>f.value.trim()).length+facts.filter(f=>f.value.trim()).length,pendingCount:inputs.filter(f=>f.required&&!f.value.trim()).length+facts.filter(f=>!f.value.trim()).length,declaredCount:this.data.groups.filter(g=>g.declared).length});},
  addEntry(e){if(this._busy)return;const gi=this.data.groups.findIndex(g=>g.id===e.currentTarget.dataset.id),g=this.data.groups[gi];if(!g?.repeat||g.entries.length>=g.max)return;const entry={id:g.id+'-new-'+Date.now(),fields:g.entries[0].fields.map(f=>({...f,value:''}))};this.setData({['groups['+gi+'].entries']:g.entries.concat(entry)});this.refresh();},
  removeEntry(e){if(this._busy)return;const gi=this.data.groups.findIndex(g=>g.id===e.currentTarget.dataset.g);if(gi<0)return;const g=this.data.groups[gi];if(g.entries.length<=1)return;this.setData({['groups['+gi+'].entries']:g.entries.filter(x=>x.id!==e.currentTarget.dataset.e)});this.refresh();},
  declare(e){if(this._busy)return;const gi=this.data.groups.findIndex(g=>g.id===e.currentTarget.dataset.id),g=this.data.groups[gi];if(!g?.canDeclare)return;
@@ -34,10 +36,14 @@ Page({
   }finally{if(!this._unloaded)this.setData({['groups['+gi+'].busy']:false});}
  });},
  restore(){wx.showModal({title:'重新载入？',content:'将放弃本页尚未保存的修改，恢复本机已保存的信息。',success:r=>{if(r.confirm)this.onShow();}});},
- clearAll(){wx.showModal({title:'清空本页填写？',content:'尚未保存，保存后只更新对应的补充内容，不会重写其他正文。',success:r=>{if(!r.confirm)return;this.setData({groups:this.data.groups.map(g=>({...g,declared:false,entries:[{...g.entries[0],fields:g.entries[0].fields.map(f=>({...f,value:''}))}]}))});this.refresh();}});},
+ clearAll(){wx.showModal({title:'清空本页填写？',content:'尚未保存，保存后只更新对应的补充内容，不会重写其他正文。',success:r=>{if(!r.confirm)return;this.setData({groups:this.data.groups.map(g=>({...g,declared:false,entries:[{...g.entries[0],fields:g.entries[0].fields.map(f=>({...f,value:''}))}]})),facts:this.data.facts.map(f=>({...f,value:''}))});this.refresh();}});},
  save(){return api.action(this,async()=>{
-  const result=await api.request(api.path()+'/supplements','PUT',{revision:this._revision,groups:this.data.groups});this._revision=result.revision;wx.removeStorageSync?.(this._draftKey);
-  const t=await api.refresh();const next=()=>wx.redirectTo({url:t.sections?.length?'/pages/chapter/chapter':'/pages/generating/generating'});
+  const answers=this.data.facts.filter(f=>f.value.trim()).map(f=>({marker:f.marker,value:f.value.trim()}));
+  const result=await api.request(api.path()+'/supplements','PUT',{revision:this._revision,groups:this.data.groups});this._revision=result.revision;if(result.groups)this.setData({groups:result.groups});this.refresh();
+  let t=await api.refresh();const pending=new Set((t.pendingFacts||[]).map(f=>f.marker)),values=answers.filter(f=>pending.has(f.marker));
+  if(values.length){const saved=await api.request(api.path()+'/pending-facts','PUT',{revision:t.revision,values});this._revision=saved.revision;t=await api.refresh();}
+  this.setData({facts:factsOf(t,undefined,this.data.groups)});wx.removeStorageSync?.(this._draftKey);
+  const next=()=>wx.redirectTo({url:t.sections?.length?'/pages/chapter/chapter':'/pages/generating/generating'});
   if(result.warnings.length)wx.showModal({title:'信息已保存，请核对',content:result.warnings.join('\n'),showCancel:false,success:next});else next();
  });}
 });

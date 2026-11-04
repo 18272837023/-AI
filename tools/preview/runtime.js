@@ -31,11 +31,11 @@
     'pages/create/create': '新建技术标',
     'pages/parsing/parsing': 'AI 解析中',
     'pages/analysis/analysis': '技术标解析报告',
-    'pages/blueprint/blueprint': '施工图与要素表',
+    'pages/blueprint/blueprint': '确认大纲（旧入口）',
     'pages/outline/outline': '技术标大纲',
     'pages/generating/generating': 'AI 生成中',
-    'pages/fill/fill': '待补字段',
-    'pages/elements/elements': '完整要素表',
+    'pages/fill/fill': '待补资料',
+    'pages/elements/elements': '待补资料（旧入口）',
     'pages/chapter/chapter': '章节编辑',
     'pages/check/check': '导出前自检',
     'pages/export/export': '导出技术标'
@@ -755,11 +755,11 @@
     'pages/parsing/parsing': 'pages/create/create',
     'pages/analysis/analysis': 'pages/create/create',
     'pages/blueprint/blueprint': 'pages/analysis/analysis',
-    'pages/outline/outline': 'pages/blueprint/blueprint',
+    'pages/outline/outline': 'pages/analysis/analysis',
     'pages/generating/generating': 'pages/outline/outline',
     'pages/fill/fill': 'pages/generating/generating',
-    'pages/elements/elements': 'pages/blueprint/blueprint',
-    'pages/chapter/chapter': 'pages/fill/fill',
+    'pages/elements/elements': 'pages/chapter/chapter',
+    'pages/chapter/chapter': 'pages/outline/outline',
     'pages/check/check': 'pages/chapter/chapter',
     'pages/export/export': 'pages/check/check'
   };
@@ -916,6 +916,7 @@
     var box = document.getElementById('pages');
     box.innerHTML = '';
     (state.appConfig.pages || []).forEach(function (p) {
+      if(p === 'pages/blueprint/blueprint' || p === 'pages/elements/elements')return;
       var b = document.createElement('button');
       b.dataset.path = p;
       b.innerHTML = '<i></i>' + (PAGE_LABELS[p] || p) + '<em>' + p.replace('pages/', '').replace('/index', '') + '</em>';

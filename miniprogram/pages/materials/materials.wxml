@@ -8,7 +8,7 @@
 
     <view class="card ph-gap">
       <view class="ph-t">现在能做什么</view>
-      <view class="ph-d">从工作台上传招标文件，解析 → 施工图 → 要素表 → 正文 → 自检 → 导出，整条链路已可用。</view>
+      <view class="ph-d">从工作台上传招标文件，解析 → 确认大纲 → 生成技术标 → 自检并导出。</view>
       <button class="btn" bindtap="goCreate">去新建技术标</button>
     </view>
   </view>
