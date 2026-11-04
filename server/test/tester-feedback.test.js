@@ -20,9 +20,10 @@ test('按技术分值分配总页数，人工零分章节不改写，页数上�
  const {plan}=require('../src/expansion'),r=plan(t,100);assert.deepEqual(r.rows.map(r=>r.targetPages),[75,25,0]);assert.equal(r.rows[2].addWords,0);assert.equal(r.totalScore,40);
  for(const n of [0,1.5,301,NaN])assert.throws(()=>plan(t,n),/整数/);t.parse={project:{pageLimit:'技术标不超过80页'}};assert.throws(()=>plan(t,100),/上限/);assert.throws(()=>plan({...t,sections:t.sections.slice(0,2)},50),/补齐/);
 });
-test('微信预览失败时文件仍被保留，导出页提供保存和发送入口',async()=>{
- let cfg;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages/export/export.js'),'utf8'),{Page:p=>cfg=p,require:()=>({action:async(p,fn)=>fn(),download:async()=>({filePath:'saved/bid.docx',ext:'docx',opened:false})}),wx:{showToast(){},saveFileToDisk:o=>{assert.equal(o.filePath,'saved/bid.docx');o.success();},shareFileMessage:o=>{assert.equal(o.fileName,'技术标.docx');o.success();}}});
- const page={...cfg,data:clone(cfg.data),setData(p){Object.assign(this.data,p);}};await page.download();assert.equal(page.data.hasExport,true);assert.match(page.data.exportHint,/Word\/WPS/);await page.saveToDisk();await page.shareExport();
+test('微信预览失败仍显示下载成功和替代预览提示，导出页移除保存和发送入口',async()=>{
+ let cfg;vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/pages/export/export.js'),'utf8'),{Page:p=>cfg=p,require:()=>({action:async(p,fn)=>fn(),download:async()=>({filePath:'saved/bid.docx',ext:'docx',opened:false})}),wx:{showToast(){}}});
+ const page={...cfg,data:clone(cfg.data),setData(p){Object.assign(this.data,p);}};await page.download();assert.equal(page.data.exportProgress,100);assert.equal(page.data.exportLabel,'文件已下载');assert.match(page.data.exportHint,/导出 PDF/);assert.equal(page.saveToDisk,undefined);assert.equal(page.shareExport,undefined);
+ const markup=fs.readFileSync(path.join(__dirname,'../../miniprogram/pages/export/export.wxml'),'utf8');assert.doesNotMatch(markup,/保存到电脑|发送文件|saveToDisk|shareExport/);
 });
 const clone=x=>JSON.parse(JSON.stringify(x));
 test('已下载的云端Word遇到微信预览失败，服务层返回可保存路径，不误报下载失败',async()=>{

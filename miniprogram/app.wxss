@@ -55,6 +55,15 @@ textarea {
 }
 
 /* ---------- 卡片 ---------- */
+.task-loading-mask{position:fixed;left:0;right:0;top:0;bottom:0;z-index:200;background:rgba(20,32,55,.3);display:flex;align-items:center;justify-content:center;padding:36rpx;}
+.task-loading-panel{width:100%;max-width:650rpx;padding:44rpx 32rpx;background:#fff;border-radius:28rpx;box-shadow:0 20rpx 80rpx rgba(20,32,55,.18);text-align:center;}
+.task-loading-spinner{width:64rpx;height:64rpx;border:6rpx solid #E0EAFF;border-top-color:#165DFF;border-radius:50%;margin:0 auto 28rpx;animation:task-loading-spin .8s linear infinite;}
+.task-loading-title{font-size:32rpx;font-weight:600;color:#1D2129;line-height:1.5;}
+.task-loading-detail{margin-top:16rpx;font-size:25rpx;color:#4E5969;line-height:1.7;word-break:break-all;}
+.task-loading-progress{margin-top:24rpx;}
+.task-loading-hint{margin-top:20rpx;font-size:23rpx;color:#86909C;line-height:1.6;}
+@keyframes task-loading-spin{to{transform:rotate(360deg);}}
+
 .card {
   background: var(--card);
   border-radius: 32rpx;

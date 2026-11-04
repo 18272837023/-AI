@@ -1,0 +1,11 @@
+<template name="taskLoading">
+  <view class="task-loading-mask" wx:if="{{visible}}" catchtouchmove="blockInteraction">
+    <view class="task-loading-panel" role="status" aria-live="polite">
+      <view class="task-loading-spinner"></view>
+      <view class="task-loading-title">{{title}}</view>
+      <view class="task-loading-detail">{{detail}}</view>
+      <view class="task-loading-progress" wx:if="{{showProgress}}"><progress percent="{{progress}}" show-info stroke-width="6" activeColor="#165DFF" /></view>
+      <view class="task-loading-hint">{{hint || '正在处理，请稍候…'}}</view>
+    </view>
+  </view>
+</template>

@@ -1,1 +1,3 @@
 .page{padding:24rpx;}.sect{background:#fff;border-radius:20rpx;margin-bottom:24rpx;}.pad{padding:28rpx;}.desc{font-size:24rpx;line-height:1.7;color:#86909c;margin:16rpx 0;}.pages-input{border:1rpx solid #c9cdd4;border-radius:12rpx;padding:24rpx;margin:24rpx 0;}.allocation{padding:20rpx 0;border-bottom:1rpx solid #f0f2f5;}
+.expand-error{padding:24rpx;color:#AD4E00;background:#FFF3EF;border-radius:16rpx;line-height:1.7;font-size:24rpx;}
+.bottombar .btn[disabled]{background:#DCE6F8;color:#5873A1;opacity:1;}

@@ -1,3 +1,4 @@
+<import src="/components/task-loading.wxml" />
 <view class="page">
   <!-- 封面预览 -->
   <view class="cover-wrap">
@@ -11,6 +12,8 @@
     </view>
     <view class="cover-meta">{{chapterCount}} 章 · {{wordCount}} 字</view>
   </view>
+
+  <view class="expand-entry"><button class="btn expand-all" disabled="{{busy || navigating}}" bindtap="goExpand">按技术分值扩写全稿</button></view>
 
   <!-- 排版设置 -->
   <view class="pad" style="margin-top:28rpx">
@@ -94,17 +97,12 @@
 
     <view class="notice" style="margin-top:16rpx">
       <text class="notice-ic">i</text>
-      <text>Word 目录与页码由 Word 打开时更新；PDF 已排好版。微信预览不兼容时，可保存或发送后使用 Word/WPS 打开。</text>
+      <text>Word 目录与页码由 Word 打开时更新；PDF 已排好版。</text>
     </view>
   </view>
 
-  <view class="pad"><button class="btn ghost" disabled="{{busy}}" bindtap="goExpand">按技术分值扩写全稿</button></view>
   <view class="sect pad" wx:if="{{exportLabel}}"><view>{{exportLabel}}</view><progress percent="{{exportProgress}}" show-info stroke-width="6" activeColor="#165DFF" /></view>
-  <view class="sect pad" wx:if="{{hasExport}}">
-    <view class="notice">{{exportHint}}</view>
-    <button class="btn ghost" disabled="{{busy}}" bindtap="saveToDisk">保存到电脑</button>
-    <button class="btn ghost" disabled="{{busy}}" bindtap="shareExport">发送文件</button>
-  </view>
+  <view class="pad" wx:if="{{exportHint}}"><view class="notice">{{exportHint}}</view></view>
   <view class="pad" style="margin-bottom:24rpx"><view class="notice">{{gateTitle}} · {{gateDesc}}</view></view>
   <view class="placeholder-bar"></view>
 
@@ -112,5 +110,6 @@
     <button class="btn ghost small" bindtap="goHome">返回工作台</button>
     <button class="btn" disabled="{{busy || blocking > 0}}" bindtap="download">导出 {{format === 'word' ? 'Word' : 'PDF'}} 文档</button>
   </view>
+  <template is="taskLoading" data="{{visible:previewLoading || navigating,title:navigating ? '正在打开扩写设置' : '正在更新文稿预览',detail:navigating ? '读取章节和篇幅信息…' : '正在读取最新章节、字数和自检结果…'}}" />
 
 </view>

@@ -3,6 +3,10 @@
   /* 底部留白统一由 .placeholder-bar 承担，这里不再叠加，否则会出现大片空白 */
   padding-bottom: 0;
 }
+.chapter-expand-entry{padding:24rpx 36rpx;}.chapter-expand-entry .btn{width:100%;margin:0;white-space:nowrap;}
+.aibar .ai-tool[disabled]{background:transparent;color:#B6C4DB;opacity:1;}
+.aibar .ai-tool::after{border:none;}
+.doc-page .bottombar .btn[disabled]{background:#DCE6F8;color:#5873A1;opacity:1;}
 
 /* 待补字段提醒条 */
 .fillbar {

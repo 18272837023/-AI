@@ -1,4 +1,5 @@
 <import src="/components/flowbar.wxml" />
+<import src="/components/task-loading.wxml" />
 <view class="page doc-page">
   <template is="flowbar" data="{{step: 3}}" />
 
@@ -58,7 +59,7 @@
   </block>
 
   <!-- 编辑模式 -->
-  <button wx:if="{{!editing}}" class="btn ghost" disabled="{{busy}}" bindtap="goExpand">按技术分值扩写全稿</button>
+  <view wx:if="{{!editing}}" class="chapter-expand-entry"><button class="btn ghost" disabled="{{busy}}" bindtap="goExpand">按技术分值扩写全稿</button></view>
   <block wx:else>
     <view class="editor">
       <view wx:for="{{editBlocks}}" wx:for-index="bi" wx:key="index"><text>{{item.type === 'h4' ? '小标题' : item.type === 'table' ? '表格标题' : '正文段落'}} · {{item.covers}}</text><textarea class="editor-area" value="{{item.text}}" data-index="{{bi}}" bindinput="onBlockInput" auto-height maxlength="-1" /><view wx:if="{{item.type === 'table'}}"><view class="table-row" wx:for="{{item.rows}}" wx:for-item="row" wx:for-index="ri" wx:key="index"><textarea class="table-cell" wx:for="{{row}}" wx:for-item="cell" wx:for-index="ci" wx:key="index" value="{{cell}}" data-block="{{bi}}" data-row="{{ri}}" data-cell="{{ci}}" bindinput="onCellInput" auto-height maxlength="2000" /></view></view></view>
@@ -66,7 +67,6 @@
   </block>
 
   <view class="placeholder-bar"></view>
-  <view class="note" wx:if="{{aiLabel}}">{{aiLabel}}</view>
   <view class="aibar" wx:if="{{!editing}}">
     <button class="ai-tool" disabled="{{busy}}" data-key="continue" bindtap="aiAction">✦ 续写</button>
     <button class="ai-tool" disabled="{{busy}}" data-key="expand" bindtap="aiAction">↔ 扩写</button>
@@ -78,4 +78,5 @@
     <button wx:if="{{editing}}" class="btn" bindtap="saveEdit">确认修改</button>
     <block wx:else><button class="btn ghost small" disabled="{{busy}}" bindtap="nextChapter">下一章</button><button class="btn" disabled="{{busy}}" bindtap="goCheck">自检并导出</button></block>
   </view>
+  <template is="taskLoading" data="{{visible:aiWorking,title:aiTitle,detail:aiLabel,progress:aiProgress,showProgress:aiHasProgress,hint:'完成后会自动更新本章内容和字数，请稍候。'}}" />
 </view>

@@ -1,3 +1,4 @@
+<import src="/components/task-loading.wxml" />
 <view class="page">
  <view class="sect pad">
   <view class="h3">设置目标总页数</view>
@@ -16,6 +17,8 @@
  </view>
  <view class="sect pad" wx:if="{{label}}"><view>{{label}}</view><progress percent="{{progress}}" show-info stroke-width="6" activeColor="#165DFF" /></view>
  <view class="pad" wx:if="{{result}}">{{result}}</view>
+ <view class="expand-error" wx:if="{{error || refreshError}}">{{error || refreshError}}</view>
  <view class="placeholder-bar"></view>
- <view class="bottombar"><button class="btn ghost small" disabled="{{busy}}" bindtap="goChapter">返回正文</button><button class="btn" disabled="{{busy}}" bindtap="start">{{busy ? '正在扩写…' : '开始扩写全稿'}}</button></view>
+ <view class="bottombar"><button class="btn ghost small" disabled="{{busy}}" bindtap="goChapter">{{returnLabel}}</button><button class="btn" loading="{{expanding}}" disabled="{{busy}}" bindtap="start">{{expanding ? '正在扩写…' : '开始扩写全稿'}}</button></view>
+ <template is="taskLoading" data="{{visible:planLoading || expanding,title:expanding ? 'AI 正在扩写全稿' : '正在读取篇幅分配',detail:expanding ? label : '核对当前章节、字数与目标篇幅…',progress:progress,showProgress:expanding,hint:expanding ? '完成后会刷新章节和字数预览，请稍候。' : '正在处理，请稍候…'}}" />
 </view>
