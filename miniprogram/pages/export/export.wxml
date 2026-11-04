@@ -94,10 +94,17 @@
 
     <view class="notice" style="margin-top:16rpx">
       <text class="notice-ic">i</text>
-      <text>当前本机测试无需支付。Word 目录与页码由 Word 打开时更新；PDF 已排好版。</text>
+      <text>Word 目录与页码由 Word 打开时更新；PDF 已排好版。微信预览不兼容时，可保存或发送后使用 Word/WPS 打开。</text>
     </view>
   </view>
 
+  <view class="pad"><button class="btn ghost" disabled="{{busy}}" bindtap="goExpand">按技术分值扩写全稿</button></view>
+  <view class="sect pad" wx:if="{{exportLabel}}"><view>{{exportLabel}}</view><progress percent="{{exportProgress}}" show-info stroke-width="6" activeColor="#165DFF" /></view>
+  <view class="sect pad" wx:if="{{hasExport}}">
+    <view class="notice">{{exportHint}}</view>
+    <button class="btn ghost" disabled="{{busy}}" bindtap="saveToDisk">保存到电脑</button>
+    <button class="btn ghost" disabled="{{busy}}" bindtap="shareExport">发送文件</button>
+  </view>
   <view class="pad" style="margin-bottom:24rpx"><view class="notice">{{gateTitle}} · {{gateDesc}}</view></view>
   <view class="placeholder-bar"></view>
 

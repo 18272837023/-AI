@@ -28,19 +28,24 @@ async function sendPart(request,url,data){
   await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));
  }
 }
-async function upload(file,base,request){
+async function upload(file,base,request,onProgress=()=>{}){
  const fs=wx.getFileSystemManager();
  const stat=await new Promise((resolve,reject)=>fs.stat({path:file.path,success:r=>resolve(r.stats),fail:reject}));
  const size=stat.size;
+ onProgress({progress:0,label:'准备上传：'+file.name});
  const session=await request(base+'/uploads','POST',{name:file.name,size});
  if(!Number.isInteger(session.chunkSize)||session.chunkSize<=0||session.chunkSize>48*1024)throw Error('上传服务版本过旧，请管理员先更新云托管后端，再上传文件');
  for(let position=0,index=0;position<size;position+=session.chunkSize,index++){
   const data=await read(fs,file.path,position,Math.min(session.chunkSize,size-position));
   await sendPart(request,base+'/uploads/'+session.uploadId+'/parts',{index,base64:wx.arrayBufferToBase64(data)});
+  onProgress({progress:Math.min(99,Math.round((position+data.byteLength)/size*100)),label:'正在上传：'+file.name});
  }
- return request(base+'/uploads/'+session.uploadId+'/complete','POST',{});
+ onProgress({progress:99,label:'正在合并并保存：'+file.name});
+ const result=await request(base+'/uploads/'+session.uploadId+'/complete','POST',{});
+ onProgress({progress:100,label:'已上传：'+file.name});return result;
 }
-async function download(base,query,request){
+async function download(base,query,request,onProgress=()=>{}){
+ onProgress({progress:0,label:'正在生成导出文件…'});
  const result=await request(base+'/export?'+query+'&cloud=1');
  const fs=wx.getFileSystemManager(),filePath=wx.env.USER_DATA_PATH+'/technical-bid-'+Date.now()+'.'+result.ext;
  try{
@@ -49,9 +54,11 @@ async function download(base,query,request){
   for(let index=0;index<result.parts;index++){
    const part=await request(base+'/export-parts?downloadId='+encodeURIComponent(result.downloadId)+'&index='+index);
    const data=wx.base64ToArrayBuffer(part.base64);bytes+=data.byteLength;fs.appendFileSync(filePath,data);
+   onProgress({progress:Math.min(99,Math.round(bytes/result.size*100)),label:'正在下载导出文件…'});
   }
   if(bytes!==result.size)throw Error('导出文件下载不完整，请重试');
-  await new Promise((resolve,reject)=>wx.openDocument({filePath,fileType:result.ext,showMenu:true,success:resolve,fail:()=>reject(Error('文件打开失败'))}));
+  onProgress({progress:100,label:'导出文件下载完成'});
+  return {filePath,ext:result.ext};
  }catch(e){try{fs.unlinkSync(filePath);}catch(_){}throw e;}
 }
 module.exports={enabled,call,upload,download};

@@ -290,3 +290,4 @@
   color: #A9B0BC;
   margin-left: 10rpx;
 }
+.upload-state{padding:24rpx;background:#fff;border-radius:16rpx;margin:20rpx 0;font-size:24rpx;color:#4e5969;line-height:1.8;}

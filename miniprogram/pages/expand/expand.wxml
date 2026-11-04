@@ -1,0 +1,21 @@
+<view class="page">
+ <view class="sect pad">
+  <view class="h3">设置目标总页数</view>
+  <view class="desc">按各章技术分值占比分配目标篇幅，在原稿后补充深入论述，保留已有文字和已填资料。已达到篇幅的章节不缩减。</view>
+  <input class="pages-input" type="number" value="{{targetPages}}" bindinput="onPages" disabled="{{busy}}" placeholder="目标总页数，1—300" />
+  <button class="btn ghost" disabled="{{busy}}" bindtap="preview">查看篇幅分配</button>
+  <view class="desc">按每页约 420 字估算。表格、字号及行距影响实际页数，最终以 Word 排版核对，不能保证恰好达到指定页数。招标文件有页数上限时不得超出。</view>
+ </view>
+ <view class="sect pad" wx:if="{{plan}}">
+  <view class="h3">技术评分 {{plan.totalScore}} 分 · 目标 {{plan.targetPages}} 页</view>
+  <view class="desc">当前约 {{plan.currentWords}} 字，计划新增约 {{plan.addWords}} 字。0 分人工章节保留原稿。</view>
+  <view class="allocation" wx:for="{{plan.rows}}" wx:key="scoreId">
+   <view>{{item.title}} · {{item.score}} 分</view>
+   <view class="desc">{{item.score > 0 ? '目标约 ' + item.targetPages + ' 页' : '保留原稿'}} · 当前 {{item.currentWords}} 字 · 新增约 {{item.addWords}} 字</view>
+  </view>
+ </view>
+ <view class="sect pad" wx:if="{{label}}"><view>{{label}}</view><progress percent="{{progress}}" show-info stroke-width="6" activeColor="#165DFF" /></view>
+ <view class="pad" wx:if="{{result}}">{{result}}</view>
+ <view class="placeholder-bar"></view>
+ <view class="bottombar"><button class="btn ghost small" disabled="{{busy}}" bindtap="goChapter">返回正文</button><button class="btn" disabled="{{busy}}" bindtap="start">{{busy ? '正在扩写…' : '开始扩写全稿'}}</button></view>
+</view>

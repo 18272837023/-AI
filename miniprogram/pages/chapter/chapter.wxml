@@ -58,6 +58,7 @@
   </block>
 
   <!-- 编辑模式 -->
+  <button wx:if="{{!editing}}" class="btn ghost" disabled="{{busy}}" bindtap="goExpand">按技术分值扩写全稿</button>
   <block wx:else>
     <view class="editor">
       <view wx:for="{{editBlocks}}" wx:for-index="bi" wx:key="index"><text>{{item.type === 'h4' ? '小标题' : item.type === 'table' ? '表格标题' : '正文段落'}} · {{item.covers}}</text><textarea class="editor-area" value="{{item.text}}" data-index="{{bi}}" bindinput="onBlockInput" auto-height maxlength="-1" /><view wx:if="{{item.type === 'table'}}"><view class="table-row" wx:for="{{item.rows}}" wx:for-item="row" wx:for-index="ri" wx:key="index"><textarea class="table-cell" wx:for="{{row}}" wx:for-item="cell" wx:for-index="ci" wx:key="index" value="{{cell}}" data-block="{{bi}}" data-row="{{ri}}" data-cell="{{ci}}" bindinput="onCellInput" auto-height maxlength="2000" /></view></view></view>

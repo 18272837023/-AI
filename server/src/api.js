@@ -27,13 +27,14 @@ function assertIdle(tenderId) {
 
 function startJob(tender, stage, options) {
   const running = findRunningJob(tender.id, stage);
+  if(running&&stage==='expand'&&running.options?.targetPages!==options?.targetPages)throw Object.assign(Error('正在按先前的目标页数扩写，请等待完成后再修改目标'),{statusCode:409});
   if (running) {if((running.options?.scoreId||null)!==(options?.scoreId||null))throw Object.assign(Error('项目有其他生成任务正在执行，请等待完成后重试本章'),{statusCode:409});return { job: running, reused: true };}
 
   assertIdle(tender.id);
   const def = pipeline.STAGES[stage];
   if (!def) throw Object.assign(new Error('未知阶段：' + stage), { statusCode: 400 });
   const retryPartial=options?.retryFailed===true&&['elements','generate'].includes(stage);
-  if(!['repair','chapter','rescore'].includes(stage)&&!retryPartial)store.invalidateTender(tender.id, stage);
+  if(!['repair','chapter','rescore','expand'].includes(stage)&&!retryPartial)store.invalidateTender(tender.id, stage);
   const job = store.createJob(tender.id, stage, def.total);
   if(options)store.updateJob(job.id,{options});
   queue.enqueue({ run: () => pipeline.run(job.id, stage) });
@@ -107,6 +108,8 @@ const ext = detectExt(filename);
 }
 
 const routes = [
+  {method:'GET',path:'/v1/tenders/:id/expansion-plan',async handler({res,params,query}){ok(res,require('./expansion').plan(requireTender(params),Number(query.get('targetPages'))));}},
+  {method:'POST',path:'/v1/tenders/:id/expand',async handler({req,res,params}){const body=await readJson(req),t=requireTender(params);const plan=require('./expansion').plan(t,body.targetPages);if(plan.addWords<100)throw Object.assign(Error('现有篇幅已达到目标，请提高目标总页数'),{statusCode:400});const {job,reused}=startJob(t,'expand',{targetPages:body.targetPages});ok(res,{jobId:job.id,reused});}},
   {method:'POST',path:'/v1/tenders/:id/chapters',async handler({req,res,params}){const t=requireTender(params);assertIdle(t.id);ok(res,require('./chapters').change(t,await readJson(req)));}},
   {method:'PUT',path:'/v1/tenders/:id/pending-facts',async handler({req,res,params}){const t=requireTender(params);assertIdle(t.id);ok(res,require('./pending-facts').save(t,await readJson(req)));}},
   ...require('./cloud-transfers').routes(requireTender,assertIdle,persistUpload),
@@ -215,6 +218,7 @@ const routes = [
     async handler({ res }) {
       ok(res, {
         up: true,
+        maxFileMB:config.maxFileMB,
         llm: { mode: llm.mode(), model: llm.modelName(), live: llm.isLive() },
         queue: queue.size(),
         time: new Date().toISOString()
@@ -291,7 +295,7 @@ const routes = [
       assertIdle(t.id);
       const limit = config.maxFileMB * 1024 * 1024;
       const ct = req.headers['content-type'] || '';
-      const buf = await readBody(req, limit);
+      const buf = await readBody(req, limit+64*1024);
 
       let filename = '';
       let data = buf;
@@ -312,6 +316,7 @@ const routes = [
 
       if (!filename) throw Object.assign(new Error('缺少文件名（header x-filename 或 multipart filename）'), { statusCode: 400 });
       if (!data || !data.length) throw Object.assign(new Error('文件内容为空'), { statusCode: 400 });
+      if (data.length>limit) throw Object.assign(new Error(`文件不能超过 ${config.maxFileMB}MB`),{statusCode:413});
 
       ok(res, await persistUpload(t, filename, data));
     }

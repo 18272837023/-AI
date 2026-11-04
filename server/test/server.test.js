@@ -8,6 +8,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tender-test-'));
 process.env.DATA_DIR = tmp;
 process.env.UPLOAD_DIR = path.join(tmp, 'uploads');
 process.env.LLM_MODE = 'mock';
+process.env.MAX_FILE_MB = '200';
 const { detectExt } = require('../src/parse');
 const { createRouter } = require('../src/lib/http');
 const { routes } = require('../src/api');
@@ -57,6 +58,23 @@ test('异常 URL / JSON 不会中断服务', async () => {
     assert.equal((await request('/v1/tenders', body)).status, 400);
   }
   assert.equal((await request('/v1/health')).status, 200);
+});
+
+test('大文件分片和普通上传共用配置上限，超过50MB可创建会话，越界被拒绝',async()=>{
+ const created=await request('/v1/tenders',{name:'大文件上传验证'}),id=created.data.id,limit=require('../src/config').maxFileMB;
+ assert.ok(limit>=200);const accepted=await request(`/v1/tenders/${id}/uploads`,{name:'图纸.pdf',size:60*1024*1024});assert.equal(accepted.status,200);assert.equal(accepted.data.chunkSize,48*1024);
+ assert.equal((await request(`/v1/tenders/${id}/uploads`,{name:'图纸.pdf',size:(limit+1)*1024*1024})).status,400);
+ assert.equal((await request('/v1/health')).data.maxFileMB,limit);
+});
+
+test('按分值全稿扩写保留原文，失败章节不被半成品覆盖，成功章节持久化且重新自检',async()=>{
+ const t=supplementFixture(),before=JSON.parse(JSON.stringify(t.sections)),chapter=require('../src/pipeline/chapter-content'),original=chapter.generate,expand=require('../src/expansion');
+ const job=store.createJob(t.id,'expand',1);store.updateJob(job.id,{options:{targetPages:10}});
+ try{chapter.generate=async(group)=>{if(group.scoreId==='S2')throw Error('模型中断');return {data:{items:[{scoreId:group.scoreId,title:group.item,blocks:[{type:'h4',text:'实施深化',covers:[]},{type:'p',text:'针对工作接口补充深入论述、验收复核与异常处置。',covers:['E1']}]}]}};};
+ const result=await expand.run(job.id,t);assert.equal(result.changed,1);assert.equal(result.failed.length,1);assert.equal(result.failed[0].scoreId,'S2');assert.deepEqual(t.sections[0].blocks.slice(0,before[0].blocks.length),before[0].blocks);assert.ok(t.sections[0].blocks.length>before[0].blocks.length);assert.deepEqual(t.sections[1],before[1]);assert.ok(t.check);assert.deepEqual(t.documentHistory.at(-1).sections,before);
+ }finally{chapter.generate=original;store.updateJob(job.id,{status:'done'});}
+ const next=store.createJob(t.id,'expand',1);store.updateJob(next.id,{options:{targetPages:20}});const saved=JSON.stringify(t.sections);
+ try{chapter.generate=async()=>{throw Error('不可用');};await assert.rejects(expand.run(next.id,t),/原稿已保留/);assert.equal(JSON.stringify(t.sections),saved);}finally{chapter.generate=original;store.updateJob(next.id,{status:'failed'});}
 });
 
 test('旧版 DOC 不应被误当成 DOCX', () => {

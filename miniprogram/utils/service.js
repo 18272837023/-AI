@@ -67,10 +67,11 @@ async function refresh(projectId) {
   return session.tender;
 }
 async function create(name) { const t = await request('/v1/tenders', 'POST', { name }); return refresh(t.id); }
-async function upload(file) {
-  if(getApp().globalData.cloudHosting?.enabled&&typeof wx.cloud?.callContainer==='function')return require('./cloud-transport').upload(file,path(),request);
-  return new Promise((resolve, reject) => wx.uploadFile({ url: (getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310') + path() + '/files', filePath: file.path, name: 'file', header: accessHeaders(),
-    success: r => { try { const j = JSON.parse(r.data); if (!j.ok) throw Error(j.error.message); resolve(j.data); } catch(e) { reject(e); } }, fail: () => reject(Error('上传失败，请重新选择文件')) }));
+async function upload(file,onProgress=()=>{}) {
+  if(getApp().globalData.cloudHosting?.enabled&&typeof wx.cloud?.callContainer==='function')return require('./cloud-transport').upload(file,path(),request,onProgress);
+  onProgress({progress:0,label:'正在上传：'+file.name});
+  return new Promise((resolve, reject) => {const task=wx.uploadFile({ url: (getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310') + path() + '/files', filePath: file.path, name: 'file', header: accessHeaders(),
+    success: r => { try { const j = JSON.parse(r.data); if (!j.ok) throw Error(j.error.message); onProgress({progress:100,label:'已上传：'+file.name});resolve(j.data); } catch(e) { reject(e); } }, fail: () => reject(Error('上传失败，请重新选择文件')) });task?.onProgressUpdate?.(r=>onProgress({progress:r.progress,label:'正在上传：'+file.name}));});
 }
 async function stage(name, progress, page, options = {}) {
   const job = await request(path() + '/' + name, 'POST', options);
@@ -147,12 +148,18 @@ function generationChapters(t, job) {
 }
 
 function listItem(t) {const complete=['done','exported'].includes(t.status)||(t.status==='generated'&&(!t.generation?.total||t.generation.complete));return {...t,title:t.name,shortName:t.name,coverText:t.name.slice(0,1),coverColor:'linear-gradient(135deg,#1B3A6B,#2E5C9E)',time:t.updatedAt?.slice(0,10),statusText:t.status==='generated'&&t.generation?.total&&!t.generation.complete?'部分章节未完成':({created:'待上传',uploaded:'待解析',parsed:'已解析',blueprint:'已拆解',elements:'待生成正文',generated:'正文已生成'})[t.status]||t.status,statusClass:complete?'green':'blue',tagType:complete?'green':'blue',updateText:t.updatedAt?.slice(0,10),progressColor:complete?'#00B42A':'#165DFF',progress:t.generation?.total?Math.round(t.generation.completed/t.generation.total*100):t.stages?.sections?100:0,words:0};}
-function download(draft, options = {}) {
+async function download(draft, options = {},onProgress=()=>{}) {
   const query=Object.entries({...options,...(draft?{draft:1}:{})}).map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&');
-  if(getApp().globalData.cloudHosting?.enabled&&typeof wx.cloud?.callContainer==='function')return require('./cloud-transport').download(path(),query,request);
-  return new Promise((resolve,reject) => wx.downloadFile({url:(getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310')+path()+'/export'+(query?'?'+query:''),header:accessHeaders(),success:r=>{
+  let result;
+  onProgress({progress:0,label:'正在生成导出文件…'});
+  if(getApp().globalData.cloudHosting?.enabled&&typeof wx.cloud?.callContainer==='function')result=await require('./cloud-transport').download(path(),query,request,onProgress);
+  else result=await new Promise((resolve,reject) => {const task=wx.downloadFile({url:(getApp().globalData.apiBaseUrl || 'http://127.0.0.1:5310')+path()+'/export'+(query?'?'+query:''),header:accessHeaders(),success:r=>{
     if(r.statusCode!==200) return reject(Error('导出失败：请重新自检并处理阻断项，或下载测试草稿'));
-    wx.openDocument({filePath:r.tempFilePath,fileType:options.format==='pdf'?'pdf':'docx',showMenu:true,success:resolve,fail:()=>reject(Error('文件打开失败'))});
-  },fail:()=>reject(Error('下载失败'))}));
+    resolve({filePath:r.tempFilePath,ext:options.format==='pdf'?'pdf':'docx'});
+  },fail:()=>reject(Error('下载失败'))});task?.onProgressUpdate?.(r=>onProgress({progress:Math.min(99,r.progress),label:'正在下载导出文件…'}));});
+  onProgress({progress:100,label:'文件已下载，正在打开…'});
+  // 微信预览器不兼容时保留已下载文件，用户仍可保存到磁盘或发送给 Word/WPS。
+  const opened=await new Promise(resolve=>{try{wx.openDocument({filePath:result.filePath,fileType:result.ext,showMenu:true,success:()=>resolve(true),fail:()=>resolve(false)});}catch(_){resolve(false);}});
+  return {...result,opened};
 }
 module.exports = { session, request, refresh, create, upload, stage, ensure, save, check, action, error, view, listItem, download, path, generationChapters,stageReady };

@@ -1,6 +1,6 @@
 'use strict';
 function category(text){
- const lead=String(text||'').trim().replace(/^[|\s\d一二三四五六七八九十、.．()（）]+/,'');
+ const lead=String(text||'').split('|')[0].replace(/\s/g,'').replace(/^[\d一二三四五六七八九十、.．()（）]+/,'');
  if(/^(?:综合标|综合部分|综合评分|商务标|商务部分|商务分|资信(?:业绩)?(?:部分|标)?|价格部分|报价部分)(?=$|[（(\s|：:])/.test(lead))return 'other';
  if(/^(?:技术部分|技术标|技术方案|技术评分|承包人建议书|承包人实施方案)(?=$|[（(\s|：:])/.test(lead))return 'tech';
  return '';

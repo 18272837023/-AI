@@ -12,6 +12,7 @@
     "pages/fill/fill",
     "pages/elements/elements",
     "pages/chapter/chapter",
+    "pages/expand/expand",
     "pages/check/check",
     "pages/export/export"
   ],

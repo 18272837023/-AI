@@ -14,7 +14,7 @@ function validateDepth(section,group,plan){
  return null;
 }
 async function generate(group,context={},options={}){
- const live=llm.isLive(),plan=planFor(group.item,group.rows.length,context),size=live?3:Math.max(1,group.rows.length),blocks=[];
+ const live=llm.isLive(),plan=context.writingPlan||planFor(group.item,group.rows.length,context),size=live?3:Math.max(1,group.rows.length),blocks=[];
  let degraded=false;
  const parts=Math.ceil(group.rows.length/size);
  for(let index=0;index<parts;index++){

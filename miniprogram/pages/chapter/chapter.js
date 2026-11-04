@@ -11,5 +11,6 @@ Page({data:{chapter:{elements:[],blocks:[]},chapters:[],chapterIndex:0,doneCount
  await api.save('sections',sections,this._revision);this.setData({editing:false});this._sections=JSON.parse(JSON.stringify(api.session.tender.sections));this._revision=api.session.tender.revision;this.showChapter(this.data.chapterIndex);wx.showToast({title:'已保存',icon:'success'});});},
  nextChapter(){if(this.data.editing){wx.showToast({title:'请先保存修改',icon:'none'});return;}this.showChapter((this.data.chapterIndex+1)%this._sections.length);},
  aiAction(e){if(this.data.editing){wx.showToast({title:'请先保存修改',icon:'none'});return;}return api.action(this,async()=>{this.setData({aiLabel:'AI 正在处理…'});try{const t=await api.stage('chapter-ai',j=>this.setData({aiLabel:j.label}),this,{scoreId:this.data.chapter.scoreId,action:e.currentTarget.dataset.key});this._revision=t.revision;this._sections=JSON.parse(JSON.stringify(t.sections));this.showChapter(this.data.chapterIndex);wx.showToast({title:'正文已更新',icon:'success'});}finally{this.setData({aiLabel:''});}});},
- goCheck(){wx.navigateTo({url:'/pages/check/check'});}
+ goCheck(){wx.navigateTo({url:'/pages/check/check'});},
+ goExpand(){if(this.data.editing){wx.showToast({title:'请先保存修改',icon:'none'});return;}wx.navigateTo({url:'/pages/expand/expand'});}
 });

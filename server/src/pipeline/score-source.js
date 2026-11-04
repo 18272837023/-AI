@@ -42,7 +42,7 @@ function ruleScores(sections) {
       if (m) {name=m[1];score=Number(m[2]);standard=m[3];}
     }
     if (!name || !(score>0&&score<=100)) continue;
-    name=name.replace(/^[（(]?\d+[)）.、]?\s*/,'').trim();
+    name=name.replace(/^[（(]?\d+[)）.、]?\s*/,'').trim().replace(/([\u4e00-\u9fff])\s+(?=[\u4e00-\u9fff])/g,'$1');
     if (/总分|合计|共计|报价|价格|商务|综合标|综合部分|业绩|技术部分|技术标$|本评审项|得分|计分|评分标准|评审标准/.test(name) || name.length<2) continue;
     // 续表直到下个清晰的评分行/章节，保留完整阶梯评分原文。
     let end=i+1;

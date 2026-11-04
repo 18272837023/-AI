@@ -32,6 +32,7 @@ const STAGES = {
   generate: { label: '生成正文', total: 1 },
   repair: {label:'AI 一键优化',total:1},
   chapter: {label:'AI 编辑章节',total:1},
+  expand: {label:'按分值扩写全稿',total:1},
   rescore:{label:'重新识别评分表',total:1}
 };
 
@@ -461,13 +462,14 @@ async function run(jobId, stage, inCloudContext=false) {
     else if (stage === 'elements') result = await runElements(jobId, tender);
     else if (stage === 'generate') result = await runGenerate(jobId, tender);
     else if (stage === 'repair' || stage==='chapter') result = await require('../writing').run(jobId,tender,stage);
+    else if (stage === 'expand') result = await require('../expansion').run(jobId,tender);
     else throw new Error('未知阶段：' + stage);
 
     store.updateJob(jobId, {
       status: 'done',
       step: store.getJob(jobId).total,
       progress: 100,
-      label: result?.failed>0?'部分完成，有内容需重试':'完成',
+      label: (Array.isArray(result?.failed)?result.failed.length:result?.failed)>0?'部分完成，有内容需重试':'完成',
       result: result || null,
       finishedAt: new Date().toISOString()
     });

@@ -4,6 +4,7 @@ const store=require('./lib/store');
 const files=require('./lib/files');
 const {readJson,ok}=require('./lib/http');
 const {detectExt}=require('./parse');
+const config=require('./config');
 // 微信私有 callContainer 请求限制按编码后包体计算：48KB → Base64 64KB。
 const CHUNK=48*1024;
 function bad(message){throw Object.assign(Error(message),{statusCode:400});}
@@ -11,11 +12,11 @@ function routes(requireTender,assertIdle,persistUpload){return [
  {method:'POST',path:'/v1/tenders/:id/uploads',async handler({req,res,params}){
   const t=requireTender(params);assertIdle(t.id);const body=await readJson(req);
   if(typeof body.name!=='string'||body.name.length>200||!detectExt(body.name))bad('文件名称或类型无效');
-  if(!Number.isSafeInteger(body.size)||body.size<=0||body.size>50*1024*1024)bad('文件大小应在 50MB 以内');
+  if(!Number.isSafeInteger(body.size)||body.size<=0||body.size>config.maxFileMB*1024*1024)bad(`文件大小应在 ${config.maxFileMB}MB 以内`);
   const pending={...t.pendingUploads};
   for(const [key,value]of Object.entries(pending))if(value.expires<Date.now())delete pending[key];
   if(Object.keys(pending).length>=10)bad('未完成的上传过多，请先完成已有上传');
-  const uploadId=id('upload');pending[uploadId]={name:body.name,size:body.size,parts:Math.ceil(body.size/CHUNK),received:[],expires:Date.now()+3600000};
+  const uploadId=id('upload');pending[uploadId]={name:body.name,size:body.size,parts:Math.ceil(body.size/CHUNK),received:[],expires:Date.now()+6*3600000};
   store.updateTender(t.id,{pendingUploads:pending});ok(res,{uploadId,chunkSize:CHUNK});
  }},
  {method:'POST',path:'/v1/tenders/:id/uploads/:uploadId/parts',async handler({req,res,params}){

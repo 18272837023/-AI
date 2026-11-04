@@ -6,5 +6,8 @@ Page({data:{fonts:['宋体','黑体','仿宋'],fontIndex:0,sizes:['五号','小�
  // options 是微信页面内置的路由参数对象，不能用作自定义方法名。
  buildExportOptions(){return {font:this.data.fonts[this.data.fontIndex],size:[10.5,12,14][this.data.sizeIndex],line:['1.5','22','28'][this.data.lineIndex],toc:this.data.autoToc?'1':'0',header:this.data.headerFooter?'1':'0',blind:this.data.blindMode?'1':'0',format:this.data.format};},
  goHome(){wx.switchTab({url:'/pages/index/index'});},
- download(){return api.action(this,async()=>{await api.download(false,this.buildExportOptions());wx.showToast({title:'文档已下载',icon:'none'});});}
+ download(){return api.action(this,async()=>{let result;try{result=await api.download(false,this.buildExportOptions(),r=>this.setData({exportProgress:r.progress,exportLabel:r.label}));}catch(e){this.setData({exportLabel:'导出未完成，请重试'});throw e;}this._exportFile=result;this.setData({hasExport:!!result?.filePath,exportProgress:100,exportLabel:'文件已下载',exportHint:result?.opened===false?'文件已下载，微信预览未能打开。请保存到电脑或发送后使用 Word/WPS 打开。':'文件已下载，可保存到电脑或发送后使用 Word/WPS 打开。'});wx.showToast({title:'文档已下载',icon:'none'});});},
+ saveToDisk(){return api.action(this,async()=>{if(!this._exportFile?.filePath)throw Error('请先导出文件');if(typeof wx.saveFileToDisk!=='function')throw Error('此功能需在电脑微信中使用；手机可点“发送文件”');await new Promise((resolve,reject)=>wx.saveFileToDisk({filePath:this._exportFile.filePath,success:resolve,fail:()=>reject(Error('未保存文件，可重试或选择发送文件'))}));});},
+ shareExport(){return api.action(this,async()=>{if(!this._exportFile?.filePath)throw Error('请先导出文件');if(typeof wx.shareFileMessage!=='function')throw Error('当前微信版本不支持发送文件，请使用电脑保存功能');await new Promise((resolve,reject)=>wx.shareFileMessage({filePath:this._exportFile.filePath,fileName:'技术标.'+this._exportFile.ext,success:resolve,fail:()=>reject(Error('文件未发送，可重试'))}));});},
+ goExpand(){wx.navigateTo({url:'/pages/expand/expand'});}
 });

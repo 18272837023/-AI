@@ -15,9 +15,9 @@
 
     <!-- 附件入口：正文上传后才出现 -->
     <view class="attach-add" wx:if="{{hasMain}}" catchtap="chooseAttach">
-      <text class="aa-plus">＋</text>
+      <text class="aa-plus">{{busy ? '…' : '＋'}}</text>
       <view class="aa-body">
-        <view class="aa-t">上传附件</view>
+        <view class="aa-t">{{busy ? '正文处理完成后可添加附件' : '上传附件'}}</view>
         <view class="aa-d">技术要求、规范、图纸说明等；工程量清单支持 Excel（XLSX / XLS），可多选</view>
       </view>
     </view>
@@ -29,12 +29,18 @@
       <view class="uparrow">↑</view>
     </view>
     <view class="upload-title">{{files.length > 0 ? '重新选择文件' : '上传招标文件'}}</view>
-    <view class="upload-desc">支持文字 PDF / DOCX / TXT，单文件 ≤ 50MB</view>
+    <view class="upload-desc">支持文字 PDF / DOCX / TXT，单文件 ≤ {{maxFileMB}}MB</view>
+    <view class="upload-desc">微信客户端从聊天文件中选择；电脑文件可先发送至“文件传输助手”</view>
     <view class="ways">
       <view class="chip" catchtap="chooseFile">选择文件</view>
     </view>
   </view>
 
+  <view class="upload-state" wx:if="{{uploadLabel}}" aria-live="polite">
+    <view>{{uploadLabel}}</view>
+    <progress percent="{{uploadProgress}}" show-info active="{{uploading}}" stroke-width="6" activeColor="#165DFF" />
+    <view wx:if="{{busy && !uploading}}">文件已传输，正在处理，请稍候…</view>
+  </view>
   <!-- 项目名称 -->
   <view class="formrow">
     <view class="label">项目名称</view>
@@ -82,7 +88,7 @@
 
   <view class="notice">
     <text class="notice-ic">i</text>
-    <text>文件保存在本机；开启真实 AI 后，相关内容会发送至你配置的模型服务。</text>
+    <text>文件上传至项目云端存储用于解析；相关内容会发送至配置的模型服务。图纸需提供可读取文字的 PDF，扫描图暂不支持识图。</text>
   </view>
 
   <view class="placeholder-bar"></view>

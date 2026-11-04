@@ -883,8 +883,9 @@
     },
     openDocument: function(o) {
       var a=document.createElement('a');a.href=o.filePath;a.download='技术标.'+(o.fileType==='pdf'?'pdf':'docx');a.click();
-      setTimeout(function(){URL.revokeObjectURL(o.filePath);},10000); if(o.success)o.success({});
+      if(o.success)o.success({});
     },
+    saveFileToDisk: function(o) { var a=document.createElement('a');a.href=o.filePath;a.download='技术标';a.click();if(o.success)o.success({}); },
     getStorageSync: function(k){try{return JSON.parse(localStorage.getItem('bid-'+k));}catch(e){return null;}},
     setStorageSync: function(k,v){localStorage.setItem('bid-'+k,JSON.stringify(v));},
     removeStorageSync: function(k){localStorage.removeItem('bid-'+k);},

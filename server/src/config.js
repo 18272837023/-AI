@@ -46,7 +46,7 @@ const config = {
   uploadDir: path.resolve(ROOT, process.env.UPLOAD_DIR || path.join(process.env.DATA_DIR || 'data', 'uploads')),
 
   /** 单文件上限（MB） */
-  maxFileMB: num(process.env.MAX_FILE_MB, 50),
+  maxFileMB: Math.max(1,Math.min(500,num(process.env.MAX_FILE_MB, 200))),
 
   queue: {
     /** 同时跑几个 job。P0 是单机串行队列，够用且好排查 */

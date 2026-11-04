@@ -40,12 +40,18 @@ test('小程序分片上传保持每个字节与文件名顺序，失败不会�
  await assert.rejects(client.upload({name:'f',path:'file'},'/v1/tenders/T',async(p)=>{if(p.endsWith('/uploads'))return {uploadId:'u',chunkSize:4};if(p.endsWith('/parts'))throw Error('网络中断');complete=true;}),/网络中断/);
  assert.equal(complete,false);
 });
-test('分片导出按顺序写入真实文件并校验长度后打开，不依赖downloadFile公网域名',async()=>{
+test('分片导出按顺序写入真实文件并校验长度，保留路径供预览及保存，不依赖公网域名',async()=>{
  const bytes=Buffer.from('PK-example-file'),written=[];let opened;
  const local={writeFileSync(){},appendFileSync:(p,b)=>written.push(Buffer.from(b)),unlinkSync(){}};
  const client=load({env:{USER_DATA_PATH:'private'},getFileSystemManager:()=>local,base64ToArrayBuffer:s=>Buffer.from(s,'base64'),openDocument:o=>{opened=o;o.success();}});
- await client.download('/v1/tenders/T','draft=1',async p=>p.includes('export?')?{downloadId:'d',size:bytes.length,parts:2,ext:'docx'}:{base64:(p.endsWith('0')?bytes.subarray(0,4):bytes.subarray(4)).toString('base64')});
- assert.deepEqual(Buffer.concat(written),bytes);assert.equal(opened.fileType,'docx');
+ const result=await client.download('/v1/tenders/T','draft=1',async p=>p.includes('export?')?{downloadId:'d',size:bytes.length,parts:2,ext:'docx'}:{base64:(p.endsWith('0')?bytes.subarray(0,4):bytes.subarray(4)).toString('base64')});
+ assert.deepEqual(Buffer.concat(written),bytes);assert.equal(result.ext,'docx');assert.match(result.filePath,/\.docx$/);assert.equal(opened,undefined);
+});
+
+test('上传分片按实际已确认字节报告进度，合并失败不能显示100%',async()=>{
+ const values=[],client=load({getFileSystemManager:()=>({stat:o=>o.success({stats:{size:8}}),readFile:o=>o.success({data:Buffer.alloc(o.length)})}),arrayBufferToBase64:b=>Buffer.from(b).toString('base64')});
+ await assert.rejects(client.upload({name:'x.pdf',path:'file'},'/t',async(url)=>{if(url.endsWith('/uploads'))return {uploadId:'u',chunkSize:4};if(url.endsWith('/complete'))throw Error('保存失败');return {};},r=>values.push(r)),/保存失败/);
+ assert.deepEqual(values.map(r=>r.progress),[0,50,99,99]);assert.match(values.at(-1).label,/合并/);
 });
 
 test('1.48MB真机文件各请求编码后小于100KB，超时只重试同一片，不重建项目',async()=>{

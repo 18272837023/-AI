@@ -2,6 +2,7 @@
 const PDFDocument=require('pdfkit');
 const {resolvePdfFont}=require('./pdf-fonts');
 function buildPdf(t,draft,opts){return new Promise((resolve,reject)=>{
+ t={...t,sections:require('./export-headings').exportSections(t)};
  let font;try{font=resolvePdfFont(opts.font);}catch(e){return reject(e);}
  const doc=new PDFDocument({size:'A4',margins:{top:58,bottom:58,left:58,right:58},bufferPages:true,info:{Title:draft?'测试草稿 · 不用于投标':'技术标',Author:''}}),chunks=[];
  doc.on('data',b=>chunks.push(b));doc.on('error',reject);doc.on('end',()=>resolve(Buffer.concat(chunks)));

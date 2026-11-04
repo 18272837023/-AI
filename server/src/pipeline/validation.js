@@ -1,11 +1,17 @@
 'use strict';
 // 评分表的相邻小节必须一起读取，不能只按关键词命中独立碎片。
 function scoringSections(sections) {
- const start=sections.findIndex(s=>/^第.+章$/.test(s.no||'')&&/评标办法|评审(?:办法|标准)|评分(?:办法|标准)/.test(s.title||''));
- if(start<0)return sections;
- let end=sections.findIndex((s,i)=>i>start&&/^第.+章$/.test(s.no||'')&&s.no!==sections[start].no);
- if(end<0)end=sections.length;
- return sections.slice(start,end);
+ const candidates=[];
+ sections.forEach((s,start)=>{
+  if(!/^第.+章$/.test(s.no||'')||!/评标办法|评审(?:办法|标准)|评分(?:办法|标准)/.test(s.title||''))return;
+  let end=sections.findIndex((next,i)=>i>start&&/^第.+章$/.test(next.no||''));if(end<0)end=sections.length;
+  const rows=sections.slice(start,end),text=rows.map(r=>r.text||'').join('\n');
+  // 目录标题也会成为章节，但通常无正文。优先具有真实评分行的正文区间。
+  const score=(text.match(/\|\s*\d+(?:\.\d+)?\s*分?\s*\|/g)||[]).length*10000+text.replace(/\s/g,'').length;
+  if(score)candidates.push({rows,score});
+ });
+ candidates.sort((a,b)=>b.score-a.score);
+ return candidates[0]?.rows||sections;
 }
 function validateScores(data, sections=[]) {
  const rows=data.items||[];
