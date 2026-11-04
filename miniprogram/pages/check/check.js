@@ -32,9 +32,11 @@ Page({
   },
   setFilter(e) { const key = e.currentTarget.dataset.key; this.setData({ filter: key, shown: key === 'all' ? this.data.check.items : this.data.check.items.filter(i => i.level === key) }); },
   primary(e) {
+    if (this._busy || this.data.optimizing) return;
     const item = this.data.check.items.find(i => i.id === e.currentTarget.dataset.id);
+    if (!item) return;
     if (item?.fixType === 'auto') return this.optimize(item.id);
-    wx.navigateTo({ url: item?.cat === 'source' ? '/pages/analysis/analysis' : item?.cat === 'outline' ? '/pages/outline/outline' : item?.id === 'C5' || item?.cat === 'supplement' ? '/pages/fill/fill' : '/pages/chapter/chapter' });
+    wx.navigateTo({ url: item?.cat === 'source' ? '/pages/analysis/analysis' : item?.cat === 'outline' ? '/pages/outline/outline' : item?.id === 'C5' || item?.cat === 'supplement' ? '/pages/fill/fill?from=check' : '/pages/chapter/chapter' });
   },
   /* 一键优化：跑 repair，若仍有可自动修复项就再来一轮（最多 3 轮），
      每轮都重新拉取自检结果，保证顶部数字和清单跟正文一致。 */

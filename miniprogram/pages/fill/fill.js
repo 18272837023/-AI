@@ -6,8 +6,8 @@ function mergeDraft(data,draft){
 function fieldsOf(groups){return groups.filter(g=>!g.declared).flatMap(g=>g.entries.flatMap(e=>e.fields.filter(f=>f.type!=='label')));}
 function factsOf(t,draft,groups=[]){const bound=new Set(groups.flatMap(g=>(g.fields||g.entries?.[0]?.fields||[]).flatMap(f=>(f.markers||[]).map(m=>m.marker))));return (t.pendingFacts||[]).filter(f=>!bound.has(f.marker)).map((f,i)=>({...f,id:'fact-'+i,chapterText:(f.chapters||[]).join('、'),value:draft?.revision===t.revision?draft.facts?.find(row=>row.marker===f.marker)?.value||'':''}));}
 Page({
- data:{groups:[],facts:[],stats:{groups:0},totalFields:0,filledCount:0,pendingCount:0,declaredCount:0,ready:false,loading:false,loadError:'',hasSections:false,busy:false},
- onLoad(){this._unloaded=false;},onUnload(){this._unloaded=true;},
+ data:{groups:[],facts:[],stats:{groups:0},totalFields:0,filledCount:0,pendingCount:0,declaredCount:0,ready:false,loading:false,loadError:'',hasSections:false,busy:false,fromCheck:false},
+ onLoad(options){this._unloaded=false;this.setData({fromCheck:options?.from==='check'});},onUnload(){this._unloaded=true;},
  onShow(){this._unloaded=false;return api.action(this,async()=>{
   this.setData({loading:true,ready:false,loadError:''});
   try{const t=await api.refresh();const data=await api.request(api.path()+'/supplements');if(this._unloaded)return;this._revision=data.revision;this._draftKey='fill-draft-'+api.path();const draft=wx.getStorageSync?.(this._draftKey);this.setData({groups:mergeDraft(data,draft),facts:factsOf(t,draft,data.groups),stats:data.stats,hasSections:data.hasSections,ready:true});this.refresh();}
@@ -43,7 +43,7 @@ Page({
   let t=await api.refresh();const pending=new Set((t.pendingFacts||[]).map(f=>f.marker)),values=answers.filter(f=>pending.has(f.marker));
   if(values.length){const saved=await api.request(api.path()+'/pending-facts','PUT',{revision:t.revision,values});this._revision=saved.revision;t=await api.refresh();}
   this.setData({facts:factsOf(t,undefined,this.data.groups)});wx.removeStorageSync?.(this._draftKey);
-  const next=()=>wx.redirectTo({url:t.sections?.length?'/pages/chapter/chapter':'/pages/generating/generating'});
+  const next=()=>{if(this._unloaded)return;if(this.data.fromCheck){wx.navigateBack({delta:1,fail:()=>wx.redirectTo({url:'/pages/check/check'})});return;}wx.redirectTo({url:t.sections?.length?'/pages/chapter/chapter':'/pages/generating/generating'});};
   if(result.warnings.length)wx.showModal({title:'信息已保存，请核对',content:result.warnings.join('\n'),showCancel:false,success:next});else next();
  });}
 });

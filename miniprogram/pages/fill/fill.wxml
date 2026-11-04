@@ -138,6 +138,6 @@
   <view class="placeholder-bar"></view>
 
   <view class="bottombar">
-    <button class="btn" disabled="{{busy || !ready}}" bindtap="save">{{busy ? '正在保存…' : '保存并进入正文'}}</button>
+    <button class="btn" disabled="{{busy || !ready}}" bindtap="save">{{busy ? '正在保存…' : fromCheck ? '保存并返回自检' : '保存并进入正文'}}</button>
   </view>
 </view>
