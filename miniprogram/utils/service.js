@@ -143,7 +143,7 @@ function generationChapters(t, job) {
     }
     if(status==='error'&&!hasBody)words=null;
     label=String(label||'').replace(/要素表/g,'章节内容');errorText=String(errorText).replace(/要素表/g,'章节内容');
-    const plan=section?.writingPlan||require('./writing-profile').planFor(score.name,count,{project:t.parse?.project,totalElements:(t.blueprint||[]).reduce((n,g)=>n+(g.elements||[]).length,0)}),estimated=count?plan.low+'—'+plan.high:null;
+    const plan=section?.writingPlan||require('./writing-profile').planFor(score.name,count,{project:t.parse?.project,scoreId:score.id,chapters:(t.blueprint||[]).map(g=>({...g,item:g.item||(t.parse?.scores||[]).find(s=>s.id===g.scoreId)?.item})),totalElements:(t.blueprint||[]).reduce((n,g)=>n+(g.elements||[]).length,0)}),estimated=count?plan.low+'—'+plan.high:null;
     return {id:score.id,index:i+1,title:score.name,status,statusText:label,errorText,canRetry:status==='error',elementCount:count,elementLabel:count?count+' 条要素':'要素待拆解',estimatedWords:estimated,wordCount:words,wordLabel:words!==null?'实际 '+words+' 字':count?'预计 '+estimated+' 字':'字数待估算'};
   });
 }

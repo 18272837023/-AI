@@ -44,3 +44,8 @@ test('更长章节自动分轮，不通过扩大单次输出预算来处理已�
  try{generator.generate=async(part,context,options)=>{steps.push(context.expansion.round);assert.ok(context.writingPlan.perElementHigh<=780);options.onPart({index:1,total:1});return {data:{items:[{scoreId:part.scoreId,title:part.item,blocks:part.rows.flatMap(row=>paragraphs({...row,name:row.name+'第'+context.expansion.round+'轮'}))}]}};};const result=await require('../src/chapter-expansion').expand(section,group);assert.ok(steps.length>1);assert.deepEqual(steps,Array.from({length:steps.length},(_,i)=>i+1));assert.deepEqual(result.blocks[0],section.blocks[0]);assert.ok(result.blocks.length>section.blocks.length);
  }finally{generator.generate=original;}
 });
+test('实况补写缺章使用分批正文生成器，不退回整章单次输出',async()=>{
+ const {t,job}=fixture(),generator=require('../src/pipeline/chapter-content'),original=generator.generate,isLive=llm.isLive;const untouched=t.sections[1];t.sections=[untouched];store.updateJob(job.id,{options:{issueId:'C2-S1'}});let called=0;
+ try{llm.isLive=()=>true;generator.generate=async(group,context,options)=>{called++;assert.equal(context.scoreId,'S1');assert.equal(group.rows.length,5);options.onPart({index:1,total:5});return {data:{items:[{scoreId:group.scoreId,title:group.item,blocks:group.rows.flatMap(paragraphs)}]}};};const result=await writing.run(job.id,t,'repair');assert.equal(called,1);assert.equal(result.created,1);assert.deepEqual(t.sections.find(s=>s.scoreId==='manual'),untouched);assert.ok(t.sections.find(s=>s.scoreId==='S1'));
+ }finally{generator.generate=original;llm.isLive=isLive;}
+});

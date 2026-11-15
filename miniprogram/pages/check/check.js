@@ -36,6 +36,7 @@ Page({
     const item = this.data.check.items.find(i => i.id === e.currentTarget.dataset.id);
     if (!item) return;
     if (item?.fixType === 'auto') return this.optimize(item.id);
+    if(item.scoreId!=null&&api.session?.tender){const index=(api.session.tender.sections||[]).findIndex(s=>String(s.scoreId)===String(item.scoreId));if(index>=0)api.session.chapter=index;}
     wx.navigateTo({ url: item?.cat === 'source' ? '/pages/analysis/analysis' : item?.cat === 'outline' ? '/pages/outline/outline' : item?.id === 'C5' || item?.cat === 'supplement' ? '/pages/fill/fill?from=check' : '/pages/chapter/chapter' });
   },
   /* 一键优化：跑 repair，若仍有可自动修复项就再来一轮（最多 3 轮），

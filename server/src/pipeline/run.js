@@ -379,9 +379,9 @@ async function runGenerate(jobId, tender) {
     const completed=out.find(s=>same(s.scoreId,group.scoreId));
     if(retry&&completed?.blocks?.some(b=>b.type!=='h4'&&b.text?.trim())){updateItem(jobId,i-1,{status:'done',wordCount:completed.wordCount||0});continue;}
     try {
-      const res = await require('./chapter-content').generate(group, { project: tender.parse.project, qualifications: tender.parse.qualifications, outline: tender.parse.outline,totalElements:(tender.blueprint||[]).reduce((n,bp)=>n+bp.elements.length,0)||els.reduce((n,g)=>n+g.rows.length,0),billOfQuantities:require('./attachment-context').attachmentContext(tender.doc?.sections||[],group.item),source:require('./units').docBlock(require('./units').pickSections(tender.doc?.sections||[],[group.item,'技术要求','招标范围','建设规模'],{max:10}),18000) },{
+      const res = await require('./chapter-content').generate(group, {...require('./writing-context').chapterContext(tender,group),totalElements:(tender.blueprint||[]).reduce((n,bp)=>n+bp.elements.length,0)||els.reduce((n,g)=>n+g.rows.length,0),otherSections:out.filter(s=>!same(s.scoreId,group.scoreId))},{
         normalize: (data) => sanitizeCovers(data, group.rows.map((r) => r.elementId)),
-        onPart:part=>updateItem(jobId,i-1,{part:part.index,parts:part.total,phaseLabel:`正在展开正文（本章第 ${part.index}/${part.total} 部分）`})
+        onPart:part=>updateItem(jobId,i-1,{part:part.index,parts:part.total,phaseLabel:part.label||`正在展开正文（本章第 ${part.index}/${part.total} 部分）`})
       });
       for (const sec of res.data.items || []) {
         const plain = (sec.blocks || []).map((b) => b.type==='table'?[b.text,...(b.rows||[]).map(r=>r.join(' | '))].join('\n'):b.text).join('\n');

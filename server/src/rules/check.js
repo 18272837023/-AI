@@ -339,6 +339,12 @@ function catName(cat) {
   }[cat] || cat;
 }
 
+function checkWritingQuality(tender){
+ const names={scope:'项目针对性',method:'实施步骤',responsibility:'责任与接口',acceptance:'检查交付',exception:'异常闭环',grounding:'事实与技术依据',repetition:'重复段落'};
+ return (tender.sections||[]).flatMap(s=>{const r=s.qualityReport;if(!r)return [];const changed=r.fingerprint!==require('../pipeline/writing-quality').fingerprint(s),missing=(r.rows||[]).filter(row=>row.missing?.length);if(r.status==='reviewed'&&!changed&&!missing.length)return [];
+  const detail=changed?'正文已有修改，先前的辅助深度复核结果不再代表当前内容，请人工核对。':r.status!=='reviewed'?'辅助深度复核暂未完成，正文已保存。请人工核对项目针对性、具体措施及交付要求。':missing.map(row=>{const name=tender.blueprint?.find(b=>String(b.scoreId)===String(s.scoreId))?.elements?.find(e=>e.id===row.elementId)?.name||row.elementId;return name+'：'+row.missing.map(k=>names[k]||k).join('、');}).join('；');
+  return [item({id:'C-DEPTH-'+s.scoreId,level:'warn',cat:'style',scoreId:s.scoreId,title:'「'+s.title+'」内容深度需要核对',detail:detail+' 辅助复核不代表实际评审得分。',fixType:'manual',loc:s.title})];});
+}
 function checkAll(tender) {
   const supplement=require('../supplements'),groups=supplement.getGroups(tender),st=supplement.stats(groups);
   const items = [
@@ -351,6 +357,7 @@ function checkAll(tender) {
     ...checkCompliance(tender),
     ...checkPlaceholder(tender),
     ...checkStyle(tender),
+    ...checkWritingQuality(tender),
     ...require('../supplements').declarationWarnings(tender),
     ...(tender.supplementWarnings||[]).map((detail,i)=>item({id:'SUP-W'+i,level:'warn',cat:'supplement',title:'补充信息需要核对',detail}))
   ].sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
@@ -365,5 +372,6 @@ module.exports = {
   checkElementCoverage,
   checkCompliance,
   checkPlaceholder,
-  checkStyle
+  checkStyle,
+  checkWritingQuality
 };

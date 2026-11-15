@@ -27,6 +27,7 @@ async function expand(section,group,context={},options={}){
  const minimum=Math.max(Math.ceil(originalWords*.15),Math.floor(target*.75));
  if(chars(additions)<minimum)throw Error('新增的有效内容不足，可能与原文重复；本章原文已保留，请重试');
  const addedSection={...original,blocks:additions},error=validateGroup({items:[addedSection]},group,'blocks')||(require('./lib/llm').isLive()?content.validateDepth(addedSection,group,writingPlan):null);if(error)throw Error(error);
- return {...original,blocks:[...original.blocks,...additions]};
+ options.onPart?.({index:1,total:1,round:rounds,rounds,phase:'review',label:'正在复核扩写后的内容深度'});
+ return require('./pipeline/writing-quality').reviewSaved({...original,blocks:[...original.blocks,...additions]},group,context);
 }
 module.exports={expand};

@@ -28,13 +28,15 @@ async function run(jobId,t){
    const additions=[],rounds=Math.max(1,Math.ceil(row.addWords/(group.rows.length*750)));
    for(let round=0;round<rounds;round++){
     const per=Math.ceil(row.addWords/rounds/group.rows.length),writingPlan={perElementLow:per,perElementHigh:Math.ceil(per*1.15),minPerElement:Math.floor(per*.8),minBlocks:per>=300?2:1};
-    const result=await require('./pipeline/chapter-content').generate(group,{project:t.parse?.project,qualifications:t.parse?.qualifications,writingPlan,expansion:{round:round+1,total:rounds,instruction:'只编写新增的深入论述，服务端会保留原文并追加。根据原文尚未充分展开之处补充具体工作步骤、专业接口、交付验收、异常闭环与本项目边界，不重复已有段落或原表。真实事实不得猜填。',existing:textOf({...section,blocks:[...section.blocks,...additions]}).slice(-18000)},source:require('./pipeline/units').docBlock(require('./pipeline/units').pickSections(t.doc?.sections||[],[row.title,'技术要求','采购需求'],{max:10}),18000)},{onPart:p=>store.updateJob(jobId,{label:`扩写：${row.title} · 第 ${round+1}/${rounds} 轮，第 ${p.index}/${p.total} 部分`})});
+    const result=await require('./pipeline/chapter-content').generate(group,{...require('./pipeline/writing-context').chapterContext(t,group),writingPlan,expansion:{round:round+1,total:rounds,instruction:'只编写新增的深入论述，服务端会保留原文并追加。根据原文尚未充分展开之处补充具体工作步骤、专业接口、交付验收、异常闭环与本项目边界，不重复已有段落或原表。真实事实不得猜填。',existing:textOf({...section,blocks:[...section.blocks,...additions]}).slice(-18000)}},{onPart:p=>store.updateJob(jobId,{label:`扩写：${row.title} · 第 ${round+1}/${rounds} 轮，第 ${p.index}/${p.total} 部分`})});
     const existing=new Set([...section.blocks,...additions].map(b=>b.type==='table'?JSON.stringify(b.rows):b.text?.replace(/\s/g,'')));
     for(const b of result.data.items[0].blocks){if(b.type==='h4'){additions.push({...b,text:b.text+'（补充措施）'});continue;}const key=b.type==='table'?JSON.stringify(b.rows):b.text?.replace(/\s/g,'');if(!existing.has(key)){additions.push(b);existing.add(key);}}
    }
    const next={...section,blocks:[...section.blocks,...additions]};
    if(llm.isLive()&&chars(next)-row.currentWords<row.addWords*.75)throw Error('新增内容不足目标篇幅，原章已保留，请重试扩写');
    next.plain=textOf(next);next.wordCount=chars(next);Object.assign(section,next);
+   store.updateJob(jobId,{label:'正在复核扩写后的内容：'+row.title});
+   await require('./pipeline/writing-quality').reviewSaved(section,group,require('./pipeline/writing-context').chapterContext(t,group));
    store.updateJob(jobId,{items:store.getJob(jobId).items.map((r,n)=>n===i?{...r,status:'done',wordCount:next.wordCount}:r)});
   }catch(e){failed.push({scoreId:row.scoreId,title:row.title,error:e.message});store.updateJob(jobId,{items:store.getJob(jobId).items.map((r,n)=>n===i?{...r,status:'failed',error:e.message}:r)});}
   store.updateJob(jobId,{step:i+1});

@@ -430,9 +430,9 @@ test('生成列表映射预计字数、实际字数、loading 和失败，兼容
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../../miniprogram/utils/service.js'),'utf8'),{module,exports:module.exports,require:id=>require(path.join(__dirname,'../../miniprogram/utils',id))});
  const t={name:'测试',parse:{scores:[{id:'S1',item:'质量措施'},{id:'S2',item:'安全措施'}]},blueprint:[{scoreId:'S1',elements:[{id:'E1'},{id:'E2'}]},{scoreId:'S2',elements:[{id:'E1'}]}]};
  let rows=module.exports.generationChapters(t);
- assert.equal(rows[0].index,1);assert.equal(rows[0].wordLabel,'预计 1100—1800 字');assert.equal(rows[0].elementLabel,'2 条要素');
+ assert.equal(rows[0].index,1);assert.equal(rows[0].wordLabel,'预计 3600—5200 字');assert.equal(rows[0].elementLabel,'2 条要素');
  rows=module.exports.generationChapters(t,{stage:'generate',status:'running',step:2,items:[{scoreId:'S1',status:'done',wordCount:320,elementCount:2},{scoreId:'S2',status:'running',wordCount:null,elementCount:1}]});
- assert.equal(rows[0].status,'ok');assert.equal(rows[0].wordLabel,'实际 320 字');assert.equal(rows[1].status,'write');assert.equal(rows[1].wordLabel,'预计 550—900 字');
+ assert.equal(rows[0].status,'ok');assert.equal(rows[0].wordLabel,'实际 320 字');assert.equal(rows[1].status,'write');assert.equal(rows[1].wordLabel,'预计 1800—2600 字');
  rows=module.exports.generationChapters(t,{stage:'generate',status:'failed',step:2});
  assert.equal(rows[0].status,'ok');assert.equal(rows[1].status,'error');
  rows=module.exports.generationChapters(t,{stage:'elements',status:'running',step:1});

@@ -21,3 +21,6 @@ test('AI 修复完成留在当前自检页，刷新结果与筛选，关闭提�
  let repaired=false,modal;const api={action,refresh:async()=>({}),check:async()=>({blocking:repaired?0:1,auto:repaired?0:1,warning:0,passed:repaired?1:0,items:[{id:'C5-A',cat:'placeholder',fixType:'auto',level:repaired?'pass':'block'}]}),stage:async(name,progress)=>{assert.equal(name,'repair');repaired=true;progress({progress:100,label:'修复完成'});}};
  const check=page('check',api,{navigateTo:()=>assert.fail('不能离开自检页'),navigateBack:()=>assert.fail('不能回退'),redirectTo:()=>assert.fail('不能跳转'),showModal:o=>modal=o});await check.onShow();check.setFilter({currentTarget:{dataset:{key:'block'}}});await check.primary(event('C5-A'));assert.equal(check.data.check.blocking,0);assert.equal(check.data.filter,'block');assert.equal(check.data.shown.length,0);assert.equal(check.data.lastRun.fixed,1);assert.equal(check.data.optimizing,false);assert.match(modal.title,/阻断降到 0 项/);assert.equal(modal.success,undefined);
 });
+test('内容深度提醒打开对应章节，不沿用上次停留的章节',()=>{
+ const api={session:{chapter:0,tender:{sections:[{scoreId:'A'},{scoreId:'B'}]}}};let route;const check=page('check',api,{navigateTo:o=>route=o.url});check.data.check.items=[{id:'C-DEPTH-B',cat:'style',level:'warn',fixType:'manual',scoreId:'B'}];check.primary(event('C-DEPTH-B'));assert.equal(api.session.chapter,1);assert.equal(route,'/pages/chapter/chapter');
+});
